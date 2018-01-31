@@ -1,14 +1,14 @@
 (* Copyright (C) 2005, HELM Team.
- * 
+ *
  * This file is part of HELM, an Hypertextual, Electronic
  * Library of Mathematics, developed at the Computer Science
  * Department, University of Bologna, Italy.
- * 
+ *
  * HELM is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License
  * as published by the Free Software Foundation; either version 2
  * of the License, or (at your option) any later version.
- * 
+ *
  * HELM is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
@@ -18,28 +18,28 @@
  * along with HELM; if not, write to the Free Software
  * Foundation, Inc., 59 Temple Place - Suite 330, Boston,
  * MA  02111-1307, USA.
- * 
+ *
  * For details, see the HELM World-Wide-Web page,
  * http://helm.cs.unibo.it/
  *)
 
 (* $Id: matitaInit.ml 12494 2013-02-04 17:38:31Z sacerdot $ *)
 
-type thingsToInitialize = 
+type thingsToInitialize =
   ConfigurationFile | Db | Environment | Getter | CmdLine | Registry
-  
+
 exception FailedToInitialize of thingsToInitialize
 
-let wants s l = 
+let wants s l =
   List.iter (
-    fun item -> 
+    fun item ->
       if not (List.exists (fun x -> x = item) l) then
-        raise (FailedToInitialize item)) 
+        raise (FailedToInitialize item))
   s
 
 let already_configured s l =
   List.for_all (fun item -> List.exists (fun x -> x = item) l) s
-  
+
 let conffile = ref BuildTimeConf.matita_conf
 
 let registry_defaults = [
@@ -58,8 +58,8 @@ let registry_defaults = [
 ]
 
 let set_registry_values =
-  List.iter 
-    (fun key, value -> 
+  List.iter
+    (fun key, value ->
        if not (Helm_registry.has key) then Helm_registry.set ~key ~value)
 
 let fill_registry init_status =
@@ -84,16 +84,16 @@ let load_configuration init_status =
           HLog.message ("Loading additional conf file from " ^ user_conf_file);
           try
             Helm_registry.load_from user_conf_file
-          with exn -> 
+          with exn ->
             HLog.error
               ("While loading conf file: " ^ snd (MatitaExcPp.to_string exn))
         end;
-      ConfigurationFile::init_status 
+      ConfigurationFile::init_status
     end
   else
     init_status
 
-let initialize_db init_status = 
+let initialize_db init_status =
   wants [ ConfigurationFile; CmdLine ] init_status;
   if not (already_configured [ Db ] init_status) then
     begin
@@ -102,7 +102,7 @@ let initialize_db init_status =
   else
     init_status
 
-let initialize_environment init_status = 
+let initialize_environment init_status =
   wants [CmdLine] init_status;
   if not (already_configured [Getter;Environment] init_status) then
     begin
@@ -112,15 +112,15 @@ let initialize_environment init_status =
       Getter::Environment::init_status
     end
   else
-    init_status 
-  
+    init_status
+
 let status = ref []
 
 let usages = Hashtbl.create 11 (** app name (e.g. "matitac") -> usage string *)
 let _ =
   List.iter
     (fun (name, s) -> Hashtbl.replace usages name s)
-    [ "matitac", 
+    [ "matitac",
         Printf.sprintf "Matita batch compiler v%s
 Usage: matitac [ OPTION ... ] FILE
 Options:"
@@ -137,7 +137,7 @@ Options:"
           BuildTimeConf.version;
       "matitadep",
         Printf.sprintf "Matita depency file generator v%s
-Usage: matitadep [ OPTION ... ] 
+Usage: matitadep [ OPTION ... ]
 Options:"
           BuildTimeConf.version;
       "matitaclean",
@@ -148,7 +148,7 @@ Options:"
           BuildTimeConf.version;
     ]
 let default_usage =
-  Printf.sprintf 
+  Printf.sprintf
     "Matita v%s\nUsage: matita [ ARG ]\nOptions:" BuildTimeConf.version
 
 let usage () =
@@ -166,11 +166,11 @@ let parse_cmdline init_status =
   if not (already_configured [CmdLine] init_status) then begin
     wants [Registry] init_status;
     let includes = ref [] in
-    let default_includes = [ 
+    let default_includes = [
       BuildTimeConf.new_stdlib_dir_devel;
     (* CSC: no installed standard library!
       BuildTimeConf.new_stdlib_dir_installed ; *)
-    ] 
+    ]
     in
     let absolutize s =
       if Pcre.pmatch ~pat:"^/" s then s else Sys.getcwd () ^"/"^s
@@ -199,16 +199,19 @@ let parse_cmdline init_status =
           (Printf.sprintf ("<filename> Read configuration from filename"
              ^^ "\n    Default: %s")
             BuildTimeConf.matita_conf);
-        "-extract_ocaml", 
+        "-extract_ocaml",
           Arg.Unit (fun () -> Helm_registry.set_bool "extract_ocaml" true),
-          "Extract ocaml code";
+        "Extract ocaml code";
+        "-extract_dedukti",
+          Arg.Unit (fun () -> Helm_registry.set_bool "extract_dedukti" true),
+          "Extract dedukti code";
         "-force",
             Arg.Unit (fun () -> Helm_registry.set_bool "matita.force" true),
             ("Force actions that would not be executed per default");
-        "-noprofile", 
+        "-noprofile",
           Arg.Unit (fun () -> Helm_registry.set_bool "matita.profile" false),
           "Turns off profiling printings";
-        "-noinnertypes", Arg.Unit no_innertypes, 
+        "-noinnertypes", Arg.Unit no_innertypes,
           "Turns off inner types generation while publishing";
         "-profile-only",
           Arg.String (fun rex -> Helm_registry.set "matita.profile_only" rex),
@@ -218,11 +221,11 @@ let parse_cmdline init_status =
             ("Act on the system library instead of the user one"
              ^ "\n    WARNING: not for the casual user");
         "-no-default-includes", Arg.Set no_default_includes,
-          "Do not include the default searched paths for the include command"; 
+          "Do not include the default searched paths for the include command";
         "-execcomments", Arg.Set execcomments,
           "Execute the content of (** ... *) comments";
-	"-v", 
-          Arg.Unit (fun () -> Helm_registry.set_bool "matita.verbose" true), 
+	"-v",
+          Arg.Unit (fun () -> Helm_registry.set_bool "matita.verbose" true),
           "Verbose mode";
         "--version", Arg.Unit print_version, "Prints version"
       ] in
@@ -234,7 +237,7 @@ let parse_cmdline init_status =
               ^ "(useful for backtrace inspection)");
 	    "-onepass",
 	    Arg.Unit (fun () -> MultiPassDisambiguator.only_one_pass := true),
-	    "Enable only one disambiguation pass";    
+	    "Enable only one disambiguation pass";
           ]
         else []
       in
@@ -246,19 +249,19 @@ let parse_cmdline init_status =
     Arg.parse arg_spec (add_l args) (usage ());
     Helm_registry.set_bool ~key:"matita.execcomments" ~value:!execcomments;
     let default_includes = if !no_default_includes then [] else default_includes in
-    let includes = 
-      List.map (fun x -> HExtlib.normalize_path (absolutize x)) 
-       ((List.rev !includes) @ default_includes) 
+    let includes =
+      List.map (fun x -> HExtlib.normalize_path (absolutize x))
+       ((List.rev !includes) @ default_includes)
     in
     set_list ~key:"matita.includes" includes;
     let args = List.rev (List.filter (fun x -> x <> "") !args) in
     set_list ~key:"matita.args" args;
-    HExtlib.set_profiling_printings 
-      (fun s -> 
-        Helm_registry.get_bool "matita.profile" && 
-        Pcre.pmatch 
-          ~pat:(Helm_registry.get_opt_default 
-                  Helm_registry.string ~default:".*" "matita.profile_only") 
+    HExtlib.set_profiling_printings
+      (fun s ->
+        Helm_registry.get_bool "matita.profile" &&
+        Pcre.pmatch
+          ~pat:(Helm_registry.get_opt_default
+                  Helm_registry.string ~default:".*" "matita.profile_only")
           s);
     CmdLine :: init_status
   end else
@@ -268,14 +271,14 @@ let die_usage () =
   print_endline (usage ());
   exit 1
 
-let conf_components = 
+let conf_components =
   [ load_configuration; fill_registry; parse_cmdline]
 
 let other_components =
   [ initialize_db; initialize_environment ]
 
 let initialize_all () =
-  status := 
+  status :=
     List.fold_left (fun s f -> f s) !status
     (conf_components @ other_components);
   NCicLibrary.init ()

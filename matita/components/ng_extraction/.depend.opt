@@ -6,6 +6,9 @@ common.cmi : ocamlExtractionTable.cmi mlutil.cmi miniml.cmx coq.cmi
 extraction.cmi : ocamlExtractionTable.cmi miniml.cmx coq.cmi
 ocaml.cmi : ocamlExtractionTable.cmi miniml.cmx coq.cmi
 ocamlExtraction.cmi : ocamlExtractionTable.cmi
+dedukti.cmi :
+deduktiPrint.cmi : dedukti.cmi
+deduktiExtraction.cmi :
 miniml.cmo : coq.cmi
 miniml.cmx : coq.cmx
 nCicExtraction.cmo : nCicExtraction.cmi
@@ -32,3 +35,9 @@ ocamlExtraction.cmo : ocamlExtractionTable.cmi ocaml.cmi extraction.cmi \
     coq.cmi ocamlExtraction.cmi
 ocamlExtraction.cmx : ocamlExtractionTable.cmx ocaml.cmx extraction.cmx \
     coq.cmx ocamlExtraction.cmi
+dedukti.cmo : dedukti.cmi
+dedukti.cmx : dedukti.cmi
+deduktiPrint.cmo : dedukti.cmi deduktiPrint.cmi
+deduktiPrint.cmx : dedukti.cmx deduktiPrint.cmi
+deduktiExtraction.cmo : deduktiPrint.cmi dedukti.cmi deduktiExtraction.cmi
+deduktiExtraction.cmx : deduktiPrint.cmx dedukti.cmx deduktiExtraction.cmi

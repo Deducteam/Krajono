@@ -1,18 +1,18 @@
 (*
-    ||M||  This file is part of HELM, an Hypertextual, Electronic        
-    ||A||  Library of Mathematics, developed at the Computer Science     
-    ||T||  Department, University of Bologna, Italy.                     
-    ||I||                                                                
-    ||T||  HELM is free software; you can redistribute it and/or         
-    ||A||  modify it under the terms of the GNU General Public License   
-    \   /  version 2 or (at your option) any later version.      
-     \ /   This software is distributed as is, NO WARRANTY.     
+    ||M||  This file is part of HELM, an Hypertextual, Electronic
+    ||A||  Library of Mathematics, developed at the Computer Science
+    ||T||  Department, University of Bologna, Italy.
+    ||I||
+    ||T||  HELM is free software; you can redistribute it and/or
+    ||A||  modify it under the terms of the GNU General Public License
+    \   /  version 2 or (at your option) any later version.
+     \ /   This software is distributed as is, NO WARRANTY.
       V_______________________________________________________________ *)
 
 (* $Id: nCicLibrary.ml 13176 2016-04-18 15:29:33Z fguidi $ *)
 
 exception LibraryOutOfSync of string Lazy.t
-exception IncludedFileNotCompiled of string * string 
+exception IncludedFileNotCompiled of string * string
 
 let magic = 2;;
 
@@ -78,7 +78,7 @@ let require0 ~baseuri = require_path (ng_path_of_baseuri baseuri)
 let db_path () = Helm_registry.get "matita.basedir" ^ "/ng_db.ng";;
 
 type timestamp =
- [ `Obj of NUri.uri * NCic.obj 
+ [ `Obj of NUri.uri * NCic.obj
  | `Constr of NCic.universe * NCic.universe] list *
  (NUri.uri * string * NReference.reference) list
 ;;
@@ -196,7 +196,7 @@ let dump_obj status obj =
 ;;
 
 let remove_objects ~baseuri =
-   let uri = NUri.string_of_uri baseuri in   
+   let uri = NUri.string_of_uri baseuri in
    let path = String.sub uri 4 (String.length uri - 4) in
    let path = Helm_registry.get "matita.basedir" ^ path in
    let map name = Sys.remove (Filename.concat path name) in
@@ -264,7 +264,7 @@ module Serializer(D: sig type dumpable_s = private #dumpable_status end) =
    remove_objects ~baseuri; (* FG: we remove the old objects before putting the new ones*)
 *)
    List.iter
-    (function 
+    (function
      | `Obj (uri,obj) ->
          let ch = open_out (ng_path_of_baseuri uri) in
          Marshal.to_channel ch (magic,obj) [];
@@ -369,10 +369,11 @@ let add_obj status ((u,_,_,_,_) as orig_obj) =
          ) il)
   in
   local_aliases := references @ !local_aliases;
+  DeduktiExtraction.extract_obj (status :> NCic.status) orig_obj;
   status#set_timestamp (!storage,!local_aliases)
 ;;
 
-let add_constraint status ~acyclic u1 u2 = 
+let add_constraint status ~acyclic u1 u2 =
   if
    List.exists
     (function `Constr (u1',u2') when u1=u1' && u2=u2' -> true | _ -> false)
@@ -382,13 +383,14 @@ let add_constraint status ~acyclic u1 u2 =
    (prerr_endline "CANNOT ADD A CONSTRAINT TWICE"; assert false);
   NCicEnvironment.add_lt_constraint ~acyclic u1 u2;
   storage := (`Constr (u1,u2)) :: !storage;
+  DeduktiExtraction.extract_constraint (status :> NCic.status) u1 u2;
   status#set_timestamp (!storage,!local_aliases)
 ;;
 
 let get_obj status u =
- try 
-  List.assq u 
-   (HExtlib.filter_map 
+ try
+  List.assq u
+   (HExtlib.filter_map
     (function `Obj (u,o) -> Some (u,o) | _ -> None )
     !storage)
  with Not_found ->

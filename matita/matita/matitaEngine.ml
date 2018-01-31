@@ -1,14 +1,14 @@
 (* Copyright (C) 2005, HELM Team.
- * 
+ *
  * This file is part of HELM, an Hypertextual, Electronic
  * Library of Mathematics, developed at the Computer Science
  * Department, University of Bologna, Italy.
- * 
+ *
  * HELM is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License
  * as published by the Free Software Foundation; either version 2
  * of the License, or (at your option) any later version.
- * 
+ *
  * HELM is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
@@ -18,7 +18,7 @@
  * along with HELM; if not, write to the Free Software
  * Foundation, Inc., 59 Temple Place - Suite 330, Boston,
  * MA  02111-1307, USA.
- * 
+ *
  * For details, see the HELM World-Wide-Web page,
  * http://helm.cs.unibo.it/
  *)
@@ -63,7 +63,7 @@ let clean_exit baseuri exn =
   raise (FailureCompiling (baseuri,exn))
 ;;
 
-let cut prefix s = 
+let cut prefix s =
   let lenp = String.length prefix in
   let lens = String.length s in
   assert (lens > lenp);
@@ -71,7 +71,7 @@ let cut prefix s =
   String.sub s lenp (lens-lenp)
 ;;
 
-let print_string = 
+let print_string =
  let indent = ref 0 in
  let print_string ~right_justify s =
   let ss =
@@ -87,17 +87,17 @@ let print_string =
   if enter then (print_string ~right_justify s; incr indent) else (decr indent; print_string ~right_justify s)
 ;;
 
-let pp_times ss fname rc big_bang big_bang_u big_bang_s = 
+let pp_times ss fname rc big_bang big_bang_u big_bang_s =
   if not (Helm_registry.get_bool "matita.verbose") then
     let { Unix.tms_utime = u ; Unix.tms_stime = s} = Unix.times () in
     let r = Unix.gettimeofday () -. big_bang in
     let u = u -. big_bang_u in
     let s = s -. big_bang_s in
     let extra = try Sys.getenv "BENCH_EXTRA_TEXT" with Not_found -> "" in
-    let rc = 
+    let rc =
       if rc then "[0;32mOK[0m" else "[0;31mFAIL[0m" in
-    let times = 
-      let fmt t = 
+    let times =
+      let fmt t =
         let seconds = int_of_float t in
         let cents = int_of_float ((t -. floor t) *. 100.0) in
         let minutes = seconds / 60 in
@@ -125,9 +125,9 @@ let eval_ast ~include_paths ?do_heavy_checks status (text,prefix_len,ast) =
    HLog.debug ("... grafite_engine done in " ^ string_of_float (time1 -. time0) ^ "s");
    status
    ) in
- let _,intermediate_states = 
+ let _,intermediate_states =
   List.fold_left
-   (fun (status,acc) (k,value) -> 
+   (fun (status,acc) (k,value) ->
      let v = GrafiteAst.description_of_alias value in
      let b =
       try
@@ -137,7 +137,7 @@ let eval_ast ~include_paths ?do_heavy_checks status (text,prefix_len,ast) =
        NReference.IllFormedReference _ ->
         false (* v is a description, not a URI *)
      in
-      if b then 
+      if b then
        status,acc
       else
        let status =
@@ -153,23 +153,23 @@ let eval_ast ~include_paths ?do_heavy_checks status (text,prefix_len,ast) =
 let baseuri_of_script ~include_paths fname =
  try Librarian.baseuri_of_script ~include_paths fname
  with
-   Librarian.NoRootFor _ -> 
+   Librarian.NoRootFor _ ->
     HLog.error ("The included file '"^fname^"' has no root file,");
     HLog.error "please create it.";
     raise (Failure ("No root file for "^fname))
-  | Librarian.FileNotFound _ -> 
+  | Librarian.FileNotFound _ ->
     raise (Failure ("File not found: "^fname))
 ;;
 
 (* given a path to a ma file inside the include_paths, returns the
    new include_paths associated to that file *)
 let read_include_paths ~include_paths file =
- try 
-   let root, _buri, _fname, _tgt = 
-     Librarian.baseuri_of_script ~include_paths:[] file in 
+ try
+   let root, _buri, _fname, _tgt =
+     Librarian.baseuri_of_script ~include_paths:[] file in
    let includes =
     try
-     Str.split (Str.regexp " ") 
+     Str.split (Str.regexp " ")
       (List.assoc "include_paths" (Librarian.load_root_file (root^"/root")))
     with Not_found -> []
    in
@@ -179,7 +179,7 @@ let read_include_paths ~include_paths file =
   []
 ;;
 
-let rec get_ast status ~compiling ~asserted ~include_paths strm = 
+let rec get_ast status ~compiling ~asserted ~include_paths strm =
   match GrafiteParser.parse_statement status strm with
      (GrafiteAst.Executable
        (_,GrafiteAst.NCommand (_,GrafiteAst.Include (_,_,mafilename)))) as cmd
@@ -195,7 +195,7 @@ let rec get_ast status ~compiling ~asserted ~include_paths strm =
 and eval_from_stream ~compiling ~asserted ~include_paths ?do_heavy_checks status str cb =
  let matita_debug = Helm_registry.get_bool "matita.debug" in
  let rec loop asserted status str =
-  let asserted,stop,status,str = 
+  let asserted,stop,status,str =
    try
      let cont =
        try Some (get_ast status ~compiling ~asserted ~include_paths str)
@@ -236,7 +236,7 @@ and compile ~compiling ~asserted ~include_paths fname =
   if List.mem fname compiling then raise (CircularDependency fname);
   let compiling = fname::compiling in
   let matita_debug = Helm_registry.get_bool "matita.debug" in
-  let root,baseuri,fname,_tgt = 
+  let root,baseuri,fname,_tgt =
     Librarian.baseuri_of_script ~include_paths fname in
   if Http_getter_storage.is_read_only baseuri then assert false;
   (* MATITA 1.0: debbo fare time_travel sulla ng_library? *)
@@ -251,11 +251,11 @@ and compile ~compiling ~asserted ~include_paths fname =
   let ocamlfname = ocamldirname ^ "/" ^ ocamlfname ^ ".ml" in
   let status = OcamlExtraction.open_file status ~baseuri ocamlfname in
   let big_bang = Unix.gettimeofday () in
-  let { Unix.tms_utime = big_bang_u ; Unix.tms_stime = big_bang_s} = 
-    Unix.times () 
+  let { Unix.tms_utime = big_bang_u ; Unix.tms_stime = big_bang_s} =
+    Unix.times ()
   in
   let time = Unix.time () in
-  let cc = 
+  let cc =
    let rex = Str.regexp ".*opt$" in
    if Str.string_match rex Sys.argv.(0) 0 then "matitac.opt"
    else "matitac" in
@@ -275,10 +275,10 @@ and compile ~compiling ~asserted ~include_paths fname =
     assert (Http_getter_storage.is_empty ~local:true baseuri);
     (* create dir for XML files *)
     if not (Helm_registry.get_opt_default Helm_registry.bool "matita.nodisk"
-              ~default:false) 
+              ~default:false)
     then
-      HExtlib.mkdir 
-        (Filename.dirname 
+      HExtlib.mkdir
+        (Filename.dirname
           (Http_getter.filename ~local:true ~writable:true (baseuri ^
           "foo.con")));
     let buf =
@@ -299,24 +299,24 @@ and compile ~compiling ~asserted ~include_paths fname =
      end;
      let tm = Unix.gmtime elapsed in
      let sec = string_of_int tm.Unix.tm_sec ^ "''" in
-     let min = 
-       if tm.Unix.tm_min > 0 then (string_of_int tm.Unix.tm_min^"' ") else "" 
+     let min =
+       if tm.Unix.tm_min > 0 then (string_of_int tm.Unix.tm_min^"' ") else ""
      in
-     let hou = 
+     let hou =
        if tm.Unix.tm_hour > 0 then (string_of_int tm.Unix.tm_hour^"h ") else ""
      in
-     HLog.message 
+     HLog.message
        (sprintf "execution of %s completed in %s." fname (hou^min^sec));
      pp_times s fname true big_bang big_bang_u big_bang_s;
      (*CSC: bad, one imperative bit is still there!
             to be moved into functional status *)
      NCicMetaSubst.pushmaxmeta ();
 (* MATITA 1.0: debbo fare time_travel sulla ng_library?
-     LexiconSync.time_travel 
+     LexiconSync.time_travel
        ~present:lexicon_status ~past:initial_lexicon_status;
 *)
      asserted)
-  with 
+  with
   (* all exceptions should be wrapped to allow lexicon-undo (LS.time_travel) *)
   | exn when not matita_debug ->
 (* MATITA 1.0: debbo fare time_travel sulla ng_library?
@@ -337,7 +337,7 @@ and assert_ng ~already_included ~compiling ~asserted ~include_paths mapath =
    let include_paths =
     let includes =
      try
-      Str.split (Str.regexp " ") 
+      Str.split (Str.regexp " ")
        (List.assoc "include_paths" (Librarian.load_root_file (root^"/root")))
      with Not_found -> []
     in
@@ -360,13 +360,13 @@ and assert_ng ~already_included ~compiling ~asserted ~include_paths mapath =
         let preamble = GrafiteTypes.Serializer.dependencies_of baseuri in
         let asserted,children_bad =
          List.fold_left
-          (fun (asserted,b) mapath -> 
+          (fun (asserted,b) mapath ->
 	    let asserted,b1 =
-              try 
+              try
 	       assert_ng ~already_included ~compiling ~asserted ~include_paths
                 mapath
 	      with Librarian.NoRootFor _ | Librarian.FileNotFound _ ->
-	        asserted, true 
+	        asserted, true
             in
              asserted, b || b1
               || let _,baseuri,_,_ =
@@ -379,7 +379,11 @@ and assert_ng ~already_included ~compiling ~asserted ~include_paths mapath =
                     | None -> assert false)
           ) (asserted,false) preamble
         in
-         asserted, children_bad || matime > ngtime
+        let safe_get_bool name default =
+          try Helm_registry.get_bool name with
+          | Helm_registry. Key_not_found _ -> default
+        in
+         asserted, children_bad || matime > ngtime || safe_get_bool "extract_dedukti" false
      | None -> asserted,true
    in
     if not to_be_compiled then fullmapath::asserted,false

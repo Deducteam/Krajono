@@ -9,12 +9,15 @@ INTERFACE_FILES = \
  	common.mli \
  	extraction.mli \
  	ocaml.mli \
-	ocamlExtraction.mli
+	ocamlExtraction.mli \
+	dedukti.mli \
+	deduktiPrint.mli \
+	deduktiExtraction.mli \
 #	extract_env.mli \
 
 IMPLEMENTATION_FILES = \
    miniml.ml $(INTERFACE_FILES:%.mli=%.ml)
-EXTRA_OBJECTS_TO_INSTALL = 
+EXTRA_OBJECTS_TO_INSTALL =
 EXTRA_OBJECTS_TO_CLEAN =
 %.cmo: OCAMLOPTIONS += -w Ae
 %.cmi: OCAMLOPTIONS += -w Ae
