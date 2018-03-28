@@ -605,10 +605,6 @@ module Translation (I : INFO) =
     (** Translate a term according to the given type. If the type does not
         correspond to the minimal type of the term, a coercion is added. **)
     and translate_term_as context term ty =
-      let minimal_ty = type_of context term in
-      if are_convertible context minimal_ty ty then
-        translate_term context term
-      else
         translate_cast context term ty
 
     (** Add a coercion to life a term to the given type. **)
@@ -636,7 +632,7 @@ module Translation (I : INFO) =
         let s2' = translate_sort s2 in
         let term' = translate_term context term in
         cast_term s1' s2' term'
-      | _ -> failwith "Can only lift terms of product or sort type."
+      | _ -> translate_term context term
 
     (** Translate the arguments of an application according to the type
         of the applied function. **)
@@ -1056,21 +1052,6 @@ module Translation (I : INFO) =
       let ind_args' = List.map (translate_term context) ind_args in
       let context, rec_param' = translate_binding (context, rec_param) in
       let return_sort = sort_of context return_type in
-      (*
-      let gen_scheme () =
-        try
-          Format.printf "to match: %s@." name;
-          let regexp = Str.regexp "\(.*\)_\(ind\|rect_\(CProp\|Type\)\).*" in
-          if Str.string_match regexp name 0 then
-            let ind_name = Str.matched_group 1 name in
-            Format.printf "matchee: %s@." ind_name;
-            let (leftno,(_,ind_name,ty,arg)) = Hashtbl.find inductive_registry ind_name in
-            translate_match_scheme leftno ind_name ty arg return_sort;
-            translate_filter_scheme leftno ind_name ty arg return_sort
-        with _ -> ()
-      in
-      gen_scheme ();
-*)
       let return_type' = translate_term context return_type in
       let return_type'' = translate_type context return_type in
       let fun_const_type'' = to_cic_prods (List.rev (params' @ [rec_param'])) return_type'' in
@@ -1111,98 +1092,7 @@ module Translation (I : INFO) =
       in
       ()
 
-    (*
-    let translate_match_fixpoint (_, name, recno, ty, body) ind_name univ =
-      Format.printf "match: %s with universe : %a@." name pp_univ univ;
-      Format.printf "ind_name: %s@." ind_name;
-      Format.printf "Dedukti Fixpoint: %s@." name;
-      Format.printf "Body: %s@." (new P.status#ppterm [] [] [] body);
-      let univ = back_to_sort univ in
-      let filter () =
-        let (leftno,(_,ind_name,ty,arg)) = Hashtbl.find inductive_registry ind_name in
-        translate_filter_scheme leftno ind_name ty arg univ
-      in
-      filter ();
-      let rec split_fixpoint recno params ty body =
-        match ty, body with
-        | C.Prod (x, a, b), C.Lambda (_, _, m) when recno = 0 ->
-          List.rev (params), (x, a), b, m
-        | C.Prod (x, a, b), C.Lambda (_, _, m) when recno > 0 ->
-          split_fixpoint (recno - 1) ((x, a) :: params) b m
-        | _ -> failwith "invalid fixpoint"
-      in
-      let context = empty_context in
-      let params, rec_param, return_type, return = split_fixpoint recno [] ty body in
-      Format.printf "rhs: %s@." (new P.status#ppterm [] [] [] return);
-      let ind_uri, ind_args = get_inductive_arguments context (snd rec_param) in
-      let fun_const' = translate_const (I.baseuri, name) in
-      Format.printf "new name: %s@." (snd fun_const');
-      let fun_body' = translate_body_const (I.baseuri, name) in
-      let filter_ind' = translate_filter_const (U.baseuri_of_uri ind_uri , U.name_of_uri ind_uri) univ
-      in
-      let context, params' = translate_bindings context params [] in
-      let ind_args' = List.map (translate_term context) ind_args in
-      let context, rec_param' = translate_binding (context, rec_param) in
-      let return_type' = translate_term context return_type in
-      let return_type'' = translate_type context return_type in
-      let fun_const_type'' = D.prods (params' @ [rec_param']) return_type'' in
-      let () =
-        add_entry (fst fun_const') (
-          D.DefDeclaration (snd fun_const', fun_const_type''))
-      in
-      let fun_body_type'' = D.prods (params' @ [rec_param']) return_type'' in
-      let () =
-        add_entry (fst fun_body') (
-          D.DefDeclaration (snd fun_body', fun_body_type''))
-      in
-      (* Must translate return AFTER declaring the functions otherwise some
-         let definitions referring to the functions inside the body will
-         be lifted before the function declarations, and therefore not
-        typecheck. *)
-      let return' = translate_term context return in
-      let left_fun_pattern' =
-        D.papp_bindings (D.PConst fun_const') (params' @ [rec_param'])
-      in
-      let right_fun_term' =
-        D.apps (D.Const filter_ind') (ind_args' @ [
-          D.Lam (fst rec_param', snd rec_param', return_type');
-          D.app_bindings (D.Const fun_body') params';
-          D.Var (fst rec_param')])
-      in
-      let () =
-        add_entry (fst fun_const') (
-          D.RewriteRule (context.dk, left_fun_pattern', right_fun_term'))
-      in
-      let left_body_pattern' =
-        D.papp_bindings (D.PConst fun_body') (params' @ [rec_param'])
-      in
-      let right_body_term' = return' in
-      let () =
-        add_entry (fst fun_body') (
-          D.RewriteRule (context.dk, left_body_pattern', right_body_term'))
-      in
-      ()
-*)
-    let translate_fixpoints funs =
-      (*
-      let str_ind = Str.regexp "\(.*\)_ind$" in
-      let str_rect = Str.regexp "\(.*\)_rect_\(Type\)[0-9]$" in
-      let str_cprop = Str.regexp "\(.*\)_rect_\(CProp\)[0-9]$" in
-      let iter ((_,name,_,_,_) as f) =
-        if Str.string_match str_ind name 0 then
-          let ind_name = Str.matched_group 1 name in
-          translate_match_fixpoint f ind_name Prop
-        else if Str.string_match str_rect name 0 then
-          let ind_name = Str.matched_group 1 name in
-          translate_match_fixpoint f ind_name (Type (int_of_string (Str.last_chars name 1)))
-        else if Str.string_match str_cprop name 0 then
-          let ind_name = Str.matched_group 1 name in
-          translate_match_fixpoint f ind_name Prop
-        else
-          translate_fixpoint f
-      in
-*)
-      List.iter translate_fixpoint funs
+    let translate_fixpoints funs = List.iter translate_fixpoint funs
 
     (** Translate a Matita object. There are 4 kinds of objects:
         - Constant declarations (i.e. axioms)
