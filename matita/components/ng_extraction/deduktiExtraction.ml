@@ -5,7 +5,8 @@ module P = NCicPp
 module D = Dedukti
 module F = Format
 
-
+let pp ?ctx:(ctx=[]) fmt term =
+  Format.fprintf fmt "%s@." (new P.status#ppterm ctx [] [] term)
 
 (**** Utilities ****)
 
@@ -605,6 +606,14 @@ module Translation (I : INFO) =
     (** Translate a term according to the given type. If the type does not
         correspond to the minimal type of the term, a coercion is added. **)
     and translate_term_as context term ty =
+      let minimal_ty = type_of context term in
+      if are_convertible context minimal_ty ty then
+        match whd context ty with
+        | C.Sort s ->
+          let s' = translate_sort s in
+          let term' = translate_term context term in cast_term s' s' term'
+        | _ -> translate_term context term
+      else
         translate_cast context term ty
 
     (** Add a coercion to life a term to the given type. **)
@@ -632,7 +641,7 @@ module Translation (I : INFO) =
         let s2' = translate_sort s2 in
         let term' = translate_term context term in
         cast_term s1' s2' term'
-      | _ -> translate_term context term
+      | _ -> assert false
 
     (** Translate the arguments of an application according to the type
         of the applied function. **)
@@ -672,6 +681,7 @@ module Translation (I : INFO) =
       add_entry (fst const') (D.StcDeclaration (snd const', ty'))
 
     let translate_definition name ty body =
+      Format.printf "def: %s@." name;
       let ty' = translate_type empty_context ty in
       let body' = translate_term empty_context body in
       let const' = translate_const (I.baseuri, name) in
