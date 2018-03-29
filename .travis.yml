@@ -9,13 +9,13 @@ addons:
     packages:
       - opam
       - time
-	  - libgtk-3-0
 cache:
   directories:
     - $HOME/.opam
 git:
     submodules: false
 before_install:
+  - sudo apt install libgtk-3-0
   - export OPAMYES=1
   - export OPAMVERBOSE=1
   - opam init
