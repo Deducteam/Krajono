@@ -49,27 +49,27 @@ time.%:
 # Exportable libraries folders
 LIBS=basics arithmetics
 
+clean_export:
+	ls export/*.dk | grep -v cic.dk | xargs rm
+	rm export/*.dko
+
+export:
+	mkdir export
+
+.PHONY : alldks test
+
 # Paths to exportable .ma
 MAS = $(foreach dir,$(LIBS),$(wildcard matita/matita/lib/$(dir)/*.ma))
 
 # Corresponding targets
 TARGETS = $(subst .ma,, $(subst matita/matita/lib/,,$(MAS)))
 
-
-clean_export:
-	ls export/*.dk | grep -v cic.dk | xargs rm
-	rm export/*.dko
-
-.PHONY : alldks test
-
 alldks: $(TARGETS)
-
-test: export basics/bool
-	cd export
 	make -C export
 
-export:
-	mkdir export
+test: export basics/bool
+	make -C export
+
 
 define make_targets
 $1: ./matita/matita/lib/$1.ma matita/matita/matita export
