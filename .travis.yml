@@ -12,13 +12,17 @@ addons:
 cache:
   directories:
     - $HOME/.opam
+git:
+    submodules: false
 before_install:
   - export OPAMYES=1
   - export OPAMVERBOSE=1
   - opam init
   - opam switch ${OCAML_VERSION}
   - eval `opam config env`
-  - opam install camlp5 camlzip lablgtk ocaml-expat ocaml-http ocaml-migrate-parsetree ocamlfind ocamlnet pcre ppx_deriving ppx_tools ppx_tools_versioned 
+  - opam install camlp5 camlzip lablgtk ocaml-expat ocaml-http ocaml-migrate-parsetree ocamlfind ocamlnet pcre ppx_deriving ppx_tools ppx_tools_versioned
+  - sed -i 's/git@github.com:/https:\/\/github.com\//' .gitmodules
+  - git submodule update --init --recursive
 install:
   - make
 script:
