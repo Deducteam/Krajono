@@ -9,6 +9,7 @@ addons:
     packages:
       - opam
       - time
+	  - libgtk-3-0
 cache:
   directories:
     - $HOME/.opam
