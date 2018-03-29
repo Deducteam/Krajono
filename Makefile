@@ -12,7 +12,7 @@ elpi/findlib/elpi/elpi.cmxa:
 	git submodule update --init
 	$(MAKE) -C elpi
 
-clean:
+clean: clean_export
 	$(MAKE) -C elpi clean
 	$(MAKE) -C matita clean
 	rm -f time.*
@@ -41,3 +41,46 @@ time.%:
 	grep 'Matita refinement time' log | cut -d : -f 2- > log.matita.$*
 	grep 'ELPI refinement time' log | cut -d : -f 2- > log.elpi.$*
 	paste log.matita.$* log.elpi.$* > time.$*
+
+
+
+# Targets related to Dedukti exports
+
+# Exportable libraries folders
+LIBS=basics arithmetics
+
+# Paths to exportable .ma
+MAS = $(foreach dir,$(LIBS),$(wildcard matita/matita/lib/$(dir)/*.ma))
+
+# Corresponding targets
+TARGETS = $(subst .ma,, $(subst matita/matita/lib/,,$(MAS)))
+
+
+clean_export:
+	ls export/*.dk | grep -v cic.dk | xargs rm
+	rm export/*.dko
+
+.PHONY : alldks test
+
+alldks: $(TARGETS)
+
+test: export basics/bool
+	cd export
+	make -C export
+
+export:
+	mkdir export
+
+define make_targets
+$1: ./matita/matita/lib/$1.ma matita/matita/matita export
+	echo ./matita/matita/lib/$1.ma
+	matita/matita/matitac -elpi-quiet -extract_dedukti ./matita/matita/lib/$1.ma | grep .ma
+	mv *.dk export/
+
+$1.ma: $1
+
+$1.dk: $1
+
+endef
+
+$(foreach dir,$(TARGETS),$(eval $(call make_targets,$(dir))))

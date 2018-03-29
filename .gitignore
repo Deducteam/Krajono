@@ -6,6 +6,15 @@
 *.cmxa
 *.cma
 
+*.cmt
+*.cmti
+*/.depend.opt
+
+export/*.dko
+export/matita_*.dk
+export/univs.dk
+export/.depend
+
 *~
 .*.swp
 
