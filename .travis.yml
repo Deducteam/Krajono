@@ -16,6 +16,7 @@ git:
     submodules: false
 before_install:
   - sudo apt install libgtk-3-0
+  - sudo apt install libgtk2.0-dev
   - export OPAMYES=1
   - export OPAMVERBOSE=1
   - opam init
