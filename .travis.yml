@@ -15,8 +15,10 @@ cache:
 git:
     submodules: false
 before_install:
+  - sudo apt update
+  - sudo apt upgrade
   - sudo apt install liblablgtk2-ocaml-dev
-  - sudo apt install libgtk2.0-dev
+#  - sudo apt install libgtk2.0-dev
   - export OPAMYES=1
   - export OPAMVERBOSE=1
   - opam init
