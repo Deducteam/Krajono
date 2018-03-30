@@ -24,7 +24,7 @@ before_install:
   - eval `opam config env`
   - opam install camlp5 camlzip lablgtk ocaml-expat ocaml-http ocaml-migrate-parsetree ocamlfind ocamlnet pcre ppx_deriving ppx_tools ppx_tools_versioned
   - sed -i 's/git@github.com:/https:\/\/github.com\//' .gitmodules
-  - git submodule update --init --recursive
+  - git submodule update --init
 install:
   - make
 script:
