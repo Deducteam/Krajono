@@ -12,7 +12,7 @@ elpi/findlib/elpi/elpi.cmxa:
 	git submodule update --init
 	$(MAKE) -C elpi
 
-clean: clean_export
+clean: cleandk
 	$(MAKE) -C elpi clean
 	$(MAKE) -C matita clean
 	rm -f time.*
@@ -47,16 +47,13 @@ time.%:
 # Targets related to Dedukti exports
 
 # Exportable libraries folders
-LIBS=basics arithmetics
+LIBS=basics arithmetics arithmetics/chebyshev
 
-clean_export:
+cleandk:
 	ls export/*.dk | grep -v cic.dk | xargs rm
 	rm export/*.dko
 
-export:
-	mkdir export
-
-.PHONY : alldks test
+.PHONY : alldks test dkcheck
 
 # Paths to exportable .ma
 MAS = $(foreach dir,$(LIBS),$(wildcard matita/matita/lib/$(dir)/*.ma))
@@ -64,12 +61,12 @@ MAS = $(foreach dir,$(LIBS),$(wildcard matita/matita/lib/$(dir)/*.ma))
 # Corresponding targets
 TARGETS = $(subst .ma,, $(subst matita/matita/lib/,,$(MAS)))
 
-alldks: $(TARGETS)
-	make -C export
+alldks: $(TARGETS) | dkcheck
 
-test: export basics/bool
-	make -C export
+test: basics/bool | dkcheck
 
+dkcheck:
+	make -C export
 
 define make_targets
 $1: ./matita/matita/lib/$1.ma matita/matita/matita export
