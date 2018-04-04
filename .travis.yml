@@ -15,6 +15,7 @@ git:
     submodules: false
 before_install:
   - sudo apt update
+  - sudo apt upgrade
   - sudo apt install libgtk2.0-dev
   - sudo apt install ocaml-nox
   - sudo apt install ocaml-base-nox
