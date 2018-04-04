@@ -19,12 +19,12 @@ before_install:
   - sudo apt install libgtk2.0-dev
   - sudo apt install ocaml-nox
   - sudo apt install ocaml-base-nox
-  - sudo apt install liblablgtk2-ocaml
   - sudo apt install liblablgtk2-ocaml-dev
   - export OPAMYES=1
   - export OPAMVERBOSE=1
   - opam init
   - opam switch ${OCAML_VERSION}
+  - opam update
   - eval `opam config env`
   - opam install camlp5 camlzip lablgtk ocaml-expat ocaml-http ocaml-migrate-parsetree ocamlfind ocamlnet pcre ppx_deriving ppx_tools ppx_tools_versioned
   - sed -i 's/git@github.com:/https:\/\/github.com\//' .gitmodules
