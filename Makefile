@@ -50,8 +50,8 @@ time.%:
 LIBS=basics arithmetics arithmetics/chebyshev
 
 cleandk:
-	ls export/*.dk | grep -v cic.dk | xargs rm
-	rm export/*.dko
+	ls export/*.dk | grep -v cic.dk | xargs rm -f
+	rm -f export/*.dko
 
 .PHONY : alldks test dkcheck
 
