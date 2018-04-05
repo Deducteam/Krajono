@@ -14,8 +14,6 @@ cache:
 git:
     submodules: false
 before_install:
-  - sudo apt update
-  - sudo apt policy ocaml-base-nox
   - sudo apt install libgtk2.0-dev
   - sudo apt install ocaml-base-nox=4.01.0-3ubuntu3.1
   - sudo apt install liblablgtk2-ocaml
