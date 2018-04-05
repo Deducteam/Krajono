@@ -15,7 +15,7 @@ git:
     submodules: false
 before_install:
   - sudo apt install libgtk2.0-dev
-  - sudo apt install ocaml-base-nox=4.01.0-3ubuntu3.1
+  - sudo apt install --allow-downgrades ocaml-base-nox=4.01.0-3ubuntu3.1
   - sudo apt install liblablgtk2-ocaml
   - sudo apt install liblablgtk2-ocaml-dev
   - sudo apt install liblablgtksourceview2-ocaml-dev
