@@ -486,9 +486,15 @@ module Translation (I : INFO) = struct
 
 
   let sort_of context term =
-    match whd context (type_of context term) with
-    | C.Sort s -> s
-    | _ -> failwith "not a sort"
+    match term with
+    | C.Sort C.Prop -> C.Type []
+    | C.Sort C.Type t ->
+        let u = translate_univ t in
+        back_to_sort (succ u)
+    | _ ->
+      match whd context (type_of context term) with
+      | C.Sort s -> s
+      | _ -> failwith "not a sort"
 
 
   (** Split list into left and right parameters or arguments **)
@@ -499,7 +505,14 @@ module Translation (I : INFO) = struct
     | _ -> raise (Invalid_argument "split_list")
 
 
-  let rec translate_term context term =
+  let rec is_sort b =
+    match b with
+    | C.Sort _ -> true
+    | C.Prod (_, _, b) -> is_sort b
+    | _ -> false
+
+
+  and translate_term context term =
     match term with
     | C.Rel i -> List.nth context.map (i - 1)
     | C.Meta _ ->
@@ -525,7 +538,6 @@ module Translation (I : INFO) = struct
           ; map= D.Var x' :: context.map }
         in
         let s2 = sort_of context_x b in
-        Format.eprintf "sort: %a@." NCicEnvironment.ppsort s2 ;
         let s2' = translate_sort s2 in
         let b' = translate_term context_x b in
         prod_term s1' s2' a' (D.Lam (x', a'', b'))
@@ -627,45 +639,35 @@ module Translation (I : INFO) = struct
   (** Translate a term according to the given type. If the type does not
         correspond to the minimal type of the term, a coercion is added. **)
   and translate_term_as context term ty =
-    let minimal_ty = type_of context term in
-    if are_convertible context minimal_ty ty then
-      match whd context ty with
-      | C.Sort s ->
-          let s' = translate_sort s in
-          let term' = translate_term context term in
-          lift_term s' s' term'
-      | C.Prod (x, a, b) ->
-          let rec is_sort b =
-            match b with
-            | C.Sort _ -> true
-            | C.Prod (_, _, b) -> is_sort b
-            | _ -> false
-          in
-          if is_sort b then translate_cast context term ty
-          else translate_term context term
-      | _ -> translate_term context term
-    else translate_cast context term ty
+    if is_sort ty then
+      let minimal_ty = type_of context term in
+      let s1 = sort_of context minimal_ty in
+      let s2 = sort_of context ty in
+      let s1' = translate_sort s1 in
+      let s2' = translate_sort s2 in
+      let minimal_ty' = translate_term context minimal_ty in
+      let ty' = translate_term context ty in
+      cast_term s1' s2' minimal_ty' ty' (translate_term context term)
+    else translate_term context term
 
 
   (** Add a coercion to life a term to the given type. **)
   and translate_cast context term ty =
+    let apply m n =
+      match m with C.Appl ms -> C.Appl (ms @ [n]) | _ -> C.Appl [m; n]
+    in
     match whd context ty with
     | C.Prod (x, a, b) ->
-        let minimal_ty = type_of context term in
-        let minimal_ty' = translate_term context minimal_ty in
-        let msty = sort_of context minimal_ty in
-        let sty = sort_of context ty in
-        let msty' = translate_sort msty in
-        let sty = translate_sort sty in
-        let ty' = translate_term context ty in
-        let term' = translate_term context term in
-        Format.eprintf "term: %s@."
-          (new P.status#ppterm context.cic [] [] term) ;
-        Format.eprintf "minimal ty: %s@."
-          (new P.status#ppterm context.cic [] [] (type_of context term)) ;
-        Format.eprintf "minimal ty': %a@." DeduktiPrint.print_term minimal_ty' ;
-        Format.eprintf "ty: %s@." (new P.status#ppterm context.cic [] [] ty) ;
-        cast_term msty' sty minimal_ty' ty' term'
+        let a'' = translate_type context a in
+        let x' = fresh_var context.dk x in
+        let context_x =
+          { cic= (x, C.Decl a) :: context.cic
+          ; dk= (x', a'') :: context.dk
+          ; map= D.Var x' :: context.map }
+        in
+        let mx = apply (lift 1 term) (C.Rel 1) in
+        let mx' = translate_cast context_x mx b in
+        D.Lam (x', a'', mx')
     | C.Sort s2 ->
         let s1 = sort_of context term in
         let s1' = translate_sort s1 in
