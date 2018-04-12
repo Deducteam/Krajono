@@ -28,25 +28,48 @@ let theory_modname = "cic"
 
 let theory_const c args = apps (Const (theory_modname, c)) args
 
-let cast_term s1 s2 a = theory_const "lift" [s1; s2; a]
+let univ_term s = theory_const "univ" [s]
+
+let succ_sort s = theory_const "succ" [s]
+
+let cast_term s1 s2 tya tyb p = theory_const "cast" [s1; s2; tya; tyb; p]
 
 let is_sort ty =
   match ty with App (Const (_, s), _) when s = "Univ" -> true | _ -> false
-
 
 let extract_sort ty =
   match ty with
   | App (Const (_, s), t) when s = "Univ" -> t
   | _ -> assert false
 
+let rec is_sort_product ty =
+  match ty with
+  | App(Const (_, s), _) when s = "Univ" || s = "univ" -> true
+  | App(App(Const (_,s), _), a) -> is_prod_product a
+  | _ -> false
+
+and is_prod_product ty =
+  match ty with
+  | App(App(App(App(Const(_,s),_),_),_),Lam(_,_,ty)) when s = "prod" -> is_sort_product ty
+  | _ -> false
+
+let get_sort_product ty =
+  match ty with
+  | App(App(Const (_,_), s), _) -> s
+  | _ -> assert false
+
+let extract_type ty =
+  match ty with
+  | App(App(Const (_,_), _), ty) -> ty
+  | _ -> assert false
 
 let app_bindings m bs =
   let translate_var x =
     let ty = List.assoc x bs in
     if is_sort ty then
       let ty' = extract_sort ty in
-      cast_term ty' ty' (Var x)
-    else Var x
+      cast_term (succ_sort ty') (succ_sort ty') (univ_term ty') (univ_term ty') (Var x)
+    else if is_sort_product ty then cast_term (get_sort_product ty) (get_sort_product ty) (extract_type ty) (extract_type ty) (Var x) else  Var x
   in
   let xs = fst (List.split bs) in
   apps m (List.map translate_var xs)

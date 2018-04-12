@@ -915,6 +915,7 @@ module Translation (I : INFO) = struct
           filter_ind {|M_m_1|} ... {|M_m_n|} return_sort return_type return (c_m y_m_1 ... y_m_nm) -->
           return (c_m y_m_1 ... y_m_nm)
         **)
+
   let translate_filter_scheme leftno ind_name arity constructors sort =
     let sort' = translate_sort' sort in
     let context = empty_context in
