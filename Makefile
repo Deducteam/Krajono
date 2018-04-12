@@ -60,6 +60,8 @@ cleandk:
 # Paths to exportable .ma
 MAS = $(foreach dir,$(LIBS),$(wildcard matita/matita/lib/$(dir)/*.ma))
 MASW = $(foreach file,$(MAS), $(subst matita/matita/lib/,, $(file)))
+
+# tassi_examples.ma should be probably removed
 matita/matita/lib/wrapper.ma: $(MAS)
 	@for FILE in $(MASW) ; do \
 		echo "include \"$$FILE\"." >> matita/matita/lib/wrapper.ma ; \

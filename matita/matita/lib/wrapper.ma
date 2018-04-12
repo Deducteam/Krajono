@@ -23,7 +23,6 @@ include "arithmetics/iteration.ma".
 include "arithmetics/exp.ma".
 include "arithmetics/gcd.ma".
 include "arithmetics/congruence.ma".
-include "arithmetics/tassi_example.ma".
 include "arithmetics/minimization.ma".
 include "arithmetics/lstar.ma".
 include "arithmetics/chinese_reminder.ma".

@@ -1,0 +1,12 @@
+Issues:
+
+- arithmetics/tassi_example.ma cannot be translated. This is probably related to ELPI as suggested in the file
+
+- Constructors needs to have different names : min_spec and max_spec in aritmetics/minimization.ma
+
+- Some lemmas uses Proof Irrlevance :
+matita_basics_logic.dk (lemmaK)
+matita_basics_deqsets.dk (eq_sigma_true)
+matita_basics_vectors.dk (Vector_eq, vec_expand, vector_nil, change_vec_cons_tail, pmap_vec_cons, pmap_change*)
+matita_basics_jmeq.dk (K, let__1, E)
+* means its proof might not work because some lemmas do not reduce.

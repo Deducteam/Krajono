@@ -204,8 +204,6 @@ let term_type s a = theory_const "Term" [s; a]
 
 let univ_term s = theory_const "univ" [s]
 
-let lift_term s1 s2 a = theory_const "lift" [s1; s2; a]
-
 let join_term s1 s2 a b = theory_const "join" [s1; s2; a; b]
 
 let cast_term s1 s2 a b p = theory_const "cast" [s1; s2; a; b; p]
@@ -649,32 +647,6 @@ module Translation (I : INFO) = struct
       let ty' = translate_term context ty in
       cast_term s1' s2' minimal_ty' ty' (translate_term context term)
     else translate_term context term
-
-
-  (** Add a coercion to life a term to the given type. **)
-  and translate_cast context term ty =
-    let apply m n =
-      match m with C.Appl ms -> C.Appl (ms @ [n]) | _ -> C.Appl [m; n]
-    in
-    match whd context ty with
-    | C.Prod (x, a, b) ->
-        let a'' = translate_type context a in
-        let x' = fresh_var context.dk x in
-        let context_x =
-          { cic= (x, C.Decl a) :: context.cic
-          ; dk= (x', a'') :: context.dk
-          ; map= D.Var x' :: context.map }
-        in
-        let mx = apply (lift 1 term) (C.Rel 1) in
-        let mx' = translate_cast context_x mx b in
-        D.Lam (x', a'', mx')
-    | C.Sort s2 ->
-        let s1 = sort_of context term in
-        let s1' = translate_sort s1 in
-        let s2' = translate_sort s2 in
-        let term' = translate_term context term in
-        lift_term s1' s2' term'
-    | _ -> assert false
 
 
   (** Translate the arguments of an application according to the type
