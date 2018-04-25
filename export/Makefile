@@ -24,7 +24,7 @@ all: $(DKOS)
 	$(DKCHECK_) $<
 
 # standard .depend file generation
-.depend: $(DKS)
+.depend: $(subst cic.dk,, $(DKS))
 	@echo "Producing .depend"
 	@$(DKDEP) $^ -o $@
 
