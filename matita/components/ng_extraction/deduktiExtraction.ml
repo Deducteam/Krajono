@@ -201,6 +201,7 @@ let translated_match = ref UMSet.empty
 module UFSet = Set.Make(struct type t = D.constname * univ let compare = compare end)
 let translated_filter = ref UFSet.empty
 
+(*
 let pp_univ fmt u =
   match u with
   | Prop -> Format.fprintf fmt "Prop"
@@ -208,76 +209,71 @@ let pp_univ fmt u =
 
 let string_of_pp pp u =
   Format.asprintf "%a" pp u
+*)
 
-let term_of_univ u =
-  let rec type_univ i =
-    if i = 0 then
-      zero_nat
-    else
-     succ_nat (type_univ (i-1))
-  in
-  match u with
-  | Prop -> prop_sort
+let string_of_univ = function
+  | Prop -> "Prop"
+  | Type i -> Format.sprintf "Type%d" i
+
+let rec type_univ = function
+  | 0 -> zero_nat
+  | i -> succ_nat (type_univ (i-1))
+
+let term_of_univ = function
+  | Prop   -> prop_sort
   | Type i -> type_sort (type_univ i)
 
-let back_to_sort s =
-  let rec to_algebra i =
-    [`Type,  U.uri_of_string (Format.sprintf "cic:/matita/pts/Type%d.univ" i)]
-  in
-  match s with
-  | Prop -> C.Prop
-  | Type i -> C.Type(to_algebra i)
+let to_algebra i =
+  [`Type,  U.uri_of_string (Format.sprintf "cic:/matita/pts/Type%d.univ" i)]
+
+let back_to_sort = function
+  | Prop   -> C.Prop
+  | Type i -> C.Type (to_algebra i)
 
 let univ_of_string u =
   let str_cprop = Str.regexp "CProp*" in
   let str_type = Str.regexp "Type*" in
   let n = int_of_string (Str.last_chars u 1) in
-  if Str.string_match str_cprop u 0 then
-    if n = 0 then
-      Prop
-    else
-      Type(n)
-  else if Str.string_match str_type u 0 then
-    Type(n)
-  else
-    failwith "I don't know that universe"
+  if Str.string_match str_cprop u 0
+  then if n = 0
+    then Prop
+    else Type n
+  else if Str.string_match str_type u 0
+  then Type n
+  else failwith "I don't know that universe"
 
-let succ s =
-  match s with
-  | Prop -> Type 0
+let succ = function
+  | Prop   -> Type 0
   | Type i -> Type (i+1)
 
 let max_sort s s' =
   match s,s' with
-  | Prop,Prop -> Prop
-  | Type i, Prop | Prop, Type i -> Type i
+  | Prop  , Prop   -> Prop
+  | Type i, Prop
+  | Prop  , Type i -> Type i
   | Type i, Type j -> Type (max i j)
 
-let back_to_univ t =
-  let rec to_nat t =
-    match t with
-    | D.Const(_,z) when z = "z" -> 0
-    | D.App(D.Const(_,s),t) when s = "s" -> 1+ to_nat t
-    | _ -> assert false
-  in
-  match t with
+let rec to_nat = function
+  | D.Const(_,z) when z = "z" -> 0
+  | D.App(D.Const(_,s),t) when s = "s" -> 1 + to_nat t
+  | _ -> assert false
+
+let back_to_univ = function
   | D.Const(_,s) when s = "prop" -> Prop
-  | D.App(D.Const(_,t), s) when t = "type" -> Type(to_nat s)
+  | D.App(D.Const(_,t), s) when t = "type" -> Type (to_nat s)
   | _ -> assert false
 
 let rule_sort s s' =
   match s,s' with
-  | _, Prop -> Prop
-  | Prop, _ -> s'
+  | _     , Prop   -> Prop
+  | Prop  , _      -> s'
   | Type i, Type j -> Type(max i j)
 
 let rec max_sorts sorts =
   match sorts with
-  | [] ->
-    Type 0
-  | [s] -> s
-  | s :: ss ->
-    max_sort s (max_sorts ss )
+  | []      -> Type 0
+  | [s]     -> s
+  | s :: ss -> max_sort s (max_sorts ss)
 
 (**** Sorts ****)
 
@@ -309,13 +305,13 @@ let inductive_registry = Hashtbl.create 81
 (** Return the name of the match function associated to the inductive type. **)
 let translate_match_const (baseuri, name) univ =
   let univ' = translate_sort' univ in
-  let univ_name = string_of_pp pp_univ univ' in
+  let univ_name = string_of_univ univ' in
   translate_const (baseuri, Format.sprintf "match_%s_%s" name univ_name)
 
 (** Return the name of the filter function associated to the inductive type. **)
 let translate_filter_const (baseuri, name) univ =
   let univ' = translate_sort' univ in
-  let univ_name = string_of_pp pp_univ univ' in
+  let univ_name = string_of_univ univ' in
   translate_const (baseuri, Format.sprintf "filter_%s_%s" name univ_name)
 
 
@@ -365,7 +361,6 @@ let sorted_universes () =
 (** Compute the signature of the universe module from the stored constraints. **)
 let univs_signature () =
   let signature = [
-      D.Command (D.Name univs_modname);
       D.Comment "This file was automatically generated from Matita.";
       ] in
   let sorted_univs = sorted_universes () in
@@ -377,29 +372,28 @@ let univs_signature () =
   in
   List.fold_left add_entry signature sorted_univs
 
+
 (**** Terms and types ****)
 
+let of_term t =
+  match t with
+  | D.App(D.App(D.Const(_,t), s),a) when t = "Term" -> (back_to_univ s,a)
+  | D.App(D.Const(_,t),a) when t = "Univ" ->
+    let s = back_to_univ a in
+    (succ s,univ_term a)
+  | _ -> Format.printf "debug term:%a@." DeduktiPrint.print_term t; assert false
 
-
-    let of_term t =
-      match t with
-      | D.App(D.App(D.Const(_,t), s),a) when t = "Term" -> (back_to_univ s,a)
-      | D.App(D.Const(_,t),a) when t = "Univ" ->
-        let s = back_to_univ a in
-        (succ s,univ_term a)
-      | _ -> Format.printf "debug term:%a@." DeduktiPrint.print_term t; assert false
-
-    let rec to_cic_prods l a =
-      match l with
-      | [] -> a
-      | (x,t)::l ->
-        let (s',a) = of_term a in
-        let (s,t') = of_term t in
-        let ss = term_of_univ s in
-        let ss' = term_of_univ s' in
-        to_cic_prods l (term_type (term_of_univ (rule_sort s s'))
-                          (prod_term ss ss' t' (D.Lam(x,t,a))))
-
+let rec to_cic_prods l a =
+  match l with
+  | [] -> a
+  | (x,t)::l ->
+    let (s',a) = of_term a in
+    let (s,t') = of_term t in
+    let ss = term_of_univ s in
+    let ss' = term_of_univ s' in
+    to_cic_prods l (term_type (term_of_univ (rule_sort s s'))
+                      (prod_term ss ss' t' (D.Lam(x,t,a))))
+      
 
 (** The translation of terms and types is parameterized by:
     - The baseuri of the current Matita object, used to compute the name
@@ -733,8 +727,8 @@ module Translation (I : INFO) =
 
 
     let translate_match_scheme leftno ind_name arity constructors sort =
-      (*      Format.printf "size match set: %d@." (UMSet.cardinal !translated_match); *)
-(*      Format.printf "size match: %s %a@." ind_name pp_univ sort'; *)
+      (* Format.printf "size match set: %d@." (UMSet.cardinal !translated_match); *)
+      (* Format.printf "size match: %s %a@." ind_name pp_univ sort'; *)
       (* Extract (p_i : C_i), (x_i : A_i), s_ind, (y_i_j : B_i_j), and M_i_j *)
       let context = empty_context in
       let left_ind_params, right_ind_params, ind_sort =
@@ -994,11 +988,9 @@ module Translation (I : INFO) =
       translate_declaration name ty;
       List.iter (translate_constructor leftno) constructors;
       let univs =
-        let rec types n =
-          if n = 0 then
-            [Type 0]
-          else
-            Type n::types (n-1)
+        let rec types = function
+        | 0 -> [Type 0]
+        | n -> (Type n) :: (types (n-1))
         in
         [Prop]@(types 5)
       in

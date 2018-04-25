@@ -8,17 +8,15 @@ type modname = string
 
 type const = modname * constname
 
-type sort =
-| Type
-| Kind
+type sort = Type | Kind
 
 type term =
-| Var of var
+| Var   of var
 | Const of const
-| Sort of sort
-| Prod of var * term * term
-| Lam of var * term * term
-| App of term * term
+| Sort  of sort
+| Prod  of var * term * term
+| Lam   of var * term * term
+| App   of term * term
 
 let prods bs a = List.fold_right (fun (x, b) a -> Prod(x, b, a)) bs a
 let lams bs m = List.fold_right (fun (x, b) m -> Lam(x, b, m)) bs m
@@ -51,7 +49,7 @@ let papp_context m context =
   papp_bindings m (List.rev context)
 
 type command =
-| Name of modname
+| Require of modname
 
 type entry =
 | StcDeclaration of constname * term
@@ -62,5 +60,3 @@ type entry =
 | Comment of string
 
 type signature = entry list
-
-

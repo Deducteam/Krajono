@@ -12,17 +12,15 @@ type modname = string
 (** Constants are qualified by the name of the module in which they are defined. **)
 type const = modname * constname
 
-type sort =
-| Type
-| Kind
+type sort = Type | Kind
 
 type term =
-| Var of var
+| Var   of var
 | Const of const
-| Sort of sort
-| Prod of var * term * term
-| Lam of var * term * term
-| App of term * term
+| Sort  of sort
+| Prod  of var * term * term
+| Lam   of var * term * term
+| App   of term * term
 
 (** Shortcuts for n-ary term constructors **)
 val prods : (var * term) list -> term -> term
@@ -53,7 +51,7 @@ val papp_context : pattern -> context -> pattern
 
 (** Commands such as module name declaration, evaluation, ... **)
 type command =
-| Name of modname
+| Require of modname
 
 type entry =
 | StcDeclaration of constname * term
@@ -66,4 +64,3 @@ type entry =
 (** Content of a dedukti file
     WARNING: Signatures are stored in reverse order. **)
 type signature = entry list
-
