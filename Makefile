@@ -48,14 +48,10 @@ time.%:
 
 # Targets related to Dedukti exports
 
+.PHONY : alldks test dkcheck cleandk
+
 # Exportable libraries folders
 LIBS=basics arithmetics arithmetics/chebyshev
-
-cleandk:
-	ls export/*.dk | grep -v cic.dk | xargs rm -f
-	rm -f export/*.dko
-
-.PHONY : alldks test dkcheck
 
 # Paths to exportable .ma
 MAS = $(foreach dir,$(LIBS),$(wildcard matita/matita/lib/$(dir)/*.ma))
@@ -63,13 +59,6 @@ MASW = $(foreach file,$(MAS), $(subst matita/matita/lib/,, $(file)))
 
 # Corresponding targets
 TARGETS = $(subst .ma,, $(subst matita/matita/lib/,,$(MAS)))
-
-alldks: $(TARGETS) | dkcheck
-
-test: basics/bool | dkcheck
-
-dkcheck:
-	make -C export
 
 define make_targets
 $1: ./matita/matita/lib/$1.ma matita/matita/matita export
@@ -85,3 +74,15 @@ endef
 
 $(foreach dir,$(TARGETS),$(eval $(call make_targets,$(dir))))
 $(eval $(call make_targets,wrapper))
+
+
+dkcheck:
+	make -C export
+
+cleandk :
+	make -C export clean
+	ls export/*.dk | grep -v cic.dk | xargs rm -f
+
+alldks: cleandk $(TARGETS)  dkcheck
+test  : cleandk basics/bool dkcheck
+wrap  : cleandk wrapper     dkcheck
