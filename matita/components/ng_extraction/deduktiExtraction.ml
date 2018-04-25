@@ -65,10 +65,8 @@ let translate_baseuri baseuri =
   try Hashtbl.find baseuri_table baseuri with
   | Not_found ->
     let modname' = fresh_modname baseuri in
-    let () = Hashtbl.add modules_table modname' [
-      D.Command (D.Name modname');
-      D.Comment "This file was automatically generated from Matita.";
-      ] in
+    let () = Hashtbl.add modules_table modname'
+        [ D.Comment "This file was automatically generated from Matita."; ] in
     let () = Hashtbl.add baseuri_table baseuri modname' in
     modname'
 
@@ -360,9 +358,7 @@ let sorted_universes () =
 
 (** Compute the signature of the universe module from the stored constraints. **)
 let univs_signature () =
-  let signature = [
-      D.Comment "This file was automatically generated from Matita.";
-      ] in
+  let signature = [ D.Comment "This file was automatically generated from Matita."; ] in
   let sorted_univs = sorted_universes () in
   let add_entry signature u =
     let vs = Hashtbl.find constraints_table u in
