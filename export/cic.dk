@@ -97,3 +97,9 @@ def cast : s1 : Sort -> s2 : Sort -> a : Univ s1 -> b : Univ s2 -> Term s1 a -> 
       (univ (rule s1 s2))
 	  (univ (rule s1 s3))
       (prod s1 s2 a (x => b x)).
+
+
+(; Alias for universe casting: lift ;)
+
+def lift : s1 : Sort -> s2 : Sort -> Univ s1 -> Univ (max s1 s2).
+[s1,s2,m] lift s1 s2 m --> cast (succ s1) (succ s2) (univ s1) (univ s2) m.
