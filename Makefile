@@ -1,3 +1,5 @@
+#!/bin/bash
+
 all: matita/matita/matita
 
 .PHONY: matita/matita/matita
@@ -57,6 +59,7 @@ cleandk:
 
 # Paths to exportable .ma
 MAS = $(foreach dir,$(LIBS),$(wildcard matita/matita/lib/$(dir)/*.ma))
+MASW = $(foreach file,$(MAS), $(subst matita/matita/lib/,, $(file)))
 
 # Corresponding targets
 TARGETS = $(subst .ma,, $(subst matita/matita/lib/,,$(MAS)))
@@ -81,3 +84,4 @@ $1.dk: $1
 endef
 
 $(foreach dir,$(TARGETS),$(eval $(call make_targets,$(dir))))
+$(eval $(call make_targets,wrapper))
