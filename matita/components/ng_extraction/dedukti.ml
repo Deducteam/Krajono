@@ -32,7 +32,7 @@ let univ_term s = theory_const "univ" [s]
 
 let succ_sort s = theory_const "succ" [s]
 
-let cast_term s1 s2 tya tyb p = theory_const "cast" [s1; s2; tya; tyb; p]
+let lift_term s1 s2 a = theory_const "lift" [s1; s2; a]
 
 let is_sort ty =
   match ty with App (Const (_, s), _) when s = "Univ" -> true | _ -> false
@@ -68,8 +68,10 @@ let app_bindings m bs =
     let ty = List.assoc x bs in
     if is_sort ty then
       let ty' = extract_sort ty in
-      cast_term (succ_sort ty') (succ_sort ty') (univ_term ty') (univ_term ty') (Var x)
-    else if is_sort_product ty then cast_term (get_sort_product ty) (get_sort_product ty) (extract_type ty) (extract_type ty) (Var x) else  Var x
+      lift_term ty' ty' (Var x)
+    else if is_sort_product ty then
+      Var x
+    else  Var x
   in
   let xs = fst (List.split bs) in
   apps m (List.map translate_var xs)

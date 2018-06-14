@@ -16,7 +16,9 @@ export/univs.dk
 export/.depend
 
 *~
+.\#*
 .*.swp
+\#*\#
 
 refiner-CSC.html
 

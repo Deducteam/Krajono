@@ -206,7 +206,7 @@ let univ_term s = theory_const "univ" [s]
 
 let join_term s1 s2 a b = theory_const "join" [s1; s2; a; b]
 
-let cast_term s1 s2 a b p = theory_const "cast" [s1; s2; a; b; p]
+let cast_term s1 s2 a = theory_const "lift" [s1; s2; a]
 
 let prod_term s1 s2 a b = theory_const "prod" [s1; s2; a; b]
 
@@ -633,20 +633,49 @@ module Translation (I : INFO) = struct
         let ty' = translate_term context ty in
         term_type s' ty'
 
-
   (** Translate a term according to the given type. If the type does not
-        correspond to the minimal type of the term, a coercion is added. **)
+          correspond to the minimal type of the term, a coercion is added. **)
   and translate_term_as context term ty =
-    if is_sort ty then
-      let minimal_ty = type_of context term in
-      let s1 = sort_of context minimal_ty in
-      let s2 = sort_of context ty in
+    let minimal_ty = type_of context term in
+    if are_convertible context minimal_ty ty then
+      match whd context ty with
+      | C.Sort C.Prop -> translate_term context term
+      | C.Sort s ->
+        let s' = translate_sort s in
+        let term' = translate_term context term in cast_term s' s' term'
+      | C.Prod _ when is_sort ty ->
+        (* TODO: Should be cast here, *)
+        translate_term context term
+      | _ -> translate_term context term
+    else
+      translate_cast context term ty
+
+  (** Add a coercion to life a term to the given type. **)
+  and translate_cast context term ty =
+    let apply m n =
+      match m with
+      | C.Appl ms -> C.Appl (ms @ [n])
+      | _ -> C.Appl [m; n]
+    in
+    match whd context ty with
+    | C.Prod (x, a, b) ->
+      let a'' = translate_type context a in
+      let x'  = fresh_var context.dk x in
+      let context_x = {
+        cic = (x, C.Decl a) :: context.cic;
+        dk  = (x', a'') :: context.dk;
+        map = (D.Var x') :: context.map;
+      } in
+      let mx  = (apply (lift 1 term) (C.Rel 1)) in
+      let mx' = translate_cast context_x mx b in
+      D.Lam (x', a'', mx')
+    | C.Sort s2 ->
+      let s1 = sort_of context term in
       let s1' = translate_sort s1 in
       let s2' = translate_sort s2 in
-      let minimal_ty' = translate_term context minimal_ty in
-      let ty' = translate_term context ty in
-      cast_term s1' s2' minimal_ty' ty' (translate_term context term)
-    else translate_term context term
+      let term' = translate_term context term in
+      cast_term s1' s2' term'
+    | _ -> assert false
 
 
   (** Translate the arguments of an application according to the type
