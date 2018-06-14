@@ -79,14 +79,11 @@ and print_app_pattern out pattern =
 
 and print_atomic_pattern out pattern =
   match pattern with
-  | D.PVar x ->
-    F.fprintf out "%a" print_var x
-  | D.PConst c ->
-    F.fprintf out "%a" print_const c
-  | D.PGuard m ->
-    F.fprintf out "(%a)" print_abs_term m
-  | D.PLam _ | D.PApp _ ->
-    F.fprintf out "(%a)" print_abs_pattern pattern
+  | D.PVar x   -> F.fprintf out "%a" print_var x
+  | D.PConst c -> F.fprintf out "%a" print_const c
+  | D.PGuard m -> F.fprintf out "(%a)" print_abs_term m
+  | D.PLam _
+  | D.PApp _   -> F.fprintf out "(%a)" print_abs_pattern pattern
 
 let rec print_pattern out pattern =
   (* Because Dedukti does not allow referring to the head constant by its fully
@@ -100,21 +97,17 @@ let rec print_pattern out pattern =
       print_constname out constname
   | _ -> failwith "Invalid pattern"
 
-let rec print_context out context =
-  match context with
+let rec print_context out = function
   | [] -> ()
-  | [x, a] ->
-    F.fprintf out "@[%a@]"
-      print_var x
+  | [x, a] -> F.fprintf out "@[%a@]" print_var x
   | (x, a) :: g ->
     (* Contexts are stored in reverse order. *)
     F.fprintf out "@[%a,@ %a@]"
       print_context g
       print_var x
 
-let print_command out command =
-  match command with
-  | D.Name modname -> F.fprintf out "#NAME %a" print_modname modname
+let print_command out = function
+  | D.Require modname -> F.fprintf out "#REQUIRE %a" print_modname modname
 
 let print_comment out comment =
   F.fprintf out "(; %s ;)" comment

@@ -63,6 +63,10 @@ let extract_type ty =
   | App(App(Const (_,_), _), ty) -> ty
   | _ -> assert false
 
+let prods bs a = List.fold_right (fun (x, b) a -> Prod(x, b, a)) bs a
+let lams bs m = List.fold_right (fun (x, b) m -> Lam(x, b, m)) bs m
+let apps m ns = List.fold_left (fun m n -> App(m, n)) m ns
+
 let app_bindings m bs =
   let translate_var x =
     let ty = List.assoc x bs in
@@ -104,8 +108,8 @@ let papp_context m context =
   (* Contexts are stored in reverse order. *)
   papp_bindings m (List.rev context)
 
-
-type command = Name of modname
+type command =
+| Require of modname
 
 type entry =
   | StcDeclaration of constname * term

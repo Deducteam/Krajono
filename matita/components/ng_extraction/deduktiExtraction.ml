@@ -71,8 +71,7 @@ let translate_baseuri baseuri =
     let modname' = fresh_modname baseuri in
     let () =
       Hashtbl.add modules_table modname'
-        [ D.Command (D.Name modname')
-        ; D.Comment "This file was automatically generated from Matita." ]
+        [ D.Comment "This file was automatically generated from Matita." ]
     in
     let () = Hashtbl.add baseuri_table baseuri modname' in
     modname'
@@ -380,8 +379,7 @@ let sorted_universes () =
 (** Compute the signature of the universe module from the stored constraints. **)
 let univs_signature () =
   let signature =
-    [ D.Command (D.Name univs_modname)
-    ; D.Comment "This file was automatically generated from Matita." ]
+    [ D.Comment "This file was automatically generated from Matita." ]
   in
   let sorted_univs = sorted_universes () in
   let add_entry signature u =
@@ -643,9 +641,6 @@ module Translation (I : INFO) = struct
       | C.Sort s ->
         let s' = translate_sort s in
         let term' = translate_term context term in cast_term s' s' term'
-      | C.Prod _ when is_sort ty ->
-        (* TODO: Should be cast here, *)
-        translate_term context term
       | _ -> translate_term context term
     else
       translate_cast context term ty
@@ -676,7 +671,6 @@ module Translation (I : INFO) = struct
       let term' = translate_term context term in
       cast_term s1' s2' term'
     | _ -> assert false
-
 
   (** Translate the arguments of an application according to the type
         of the applied function. **)
