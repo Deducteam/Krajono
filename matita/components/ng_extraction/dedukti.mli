@@ -32,7 +32,7 @@ val app_bindings : term -> (var * term) list -> term
 type pattern =
 | PVar of var
 | PConst of const
-| PLam of var * pattern * pattern
+| PLam of var * pattern
 | PApp of pattern * pattern
 | PGuard of term
 

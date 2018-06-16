@@ -518,10 +518,10 @@ module Translation (I : INFO) = struct
         (* There should be no empty list in an application. *)
         assert false
     | C.Appl (m :: ns) ->
-        let a = type_of context m in
-        let m' = translate_term context m in
-        let ns' = translate_args context ns a in
-        D.apps m' ns'
+      let a = type_of context m in
+      let m' = translate_term context m in
+      let ns' = translate_args context ns a in
+      D.apps m' ns'
     | C.Prod (x, a, b) ->
         let s1 = sort_of context a in
         let s1' = translate_sort s1 in
@@ -599,7 +599,7 @@ module Translation (I : INFO) = struct
         let match_const' =
           translate_match_const (ind_baseuri, ind_name) return_sort
         in
-        let return_type' = translate_term context return_type in
+        let return_type' = translate_term_as context return_type (type_of context return_type) in
         let cases' = List.map (translate_term context) cases in
         let ind_args' = translate_args context ind_args ind_arity in
         let left_ind_args', right_ind_args' = split_list leftno [] ind_args' in
@@ -641,6 +641,7 @@ module Translation (I : INFO) = struct
       | C.Sort s ->
         let s' = translate_sort s in
         let term' = translate_term context term in cast_term s' s' term'
+      | t when is_sort ty -> translate_cast context term ty
       | _ -> translate_term context term
     else
       translate_cast context term ty
@@ -687,6 +688,29 @@ module Translation (I : INFO) = struct
         let n' = translate_term_as context n a in
         let ns' = translate_args context ns (subst n b) in
         n' :: ns'
+
+
+    let eta context t ty =
+      let apply m n =
+        match m with
+        | C.Appl ms -> C.Appl (ms @ [n])
+        | _ -> C.Appl [m; n]
+      in
+      let ty = whd context ty in
+      match ty with
+      | C.Prod (x, a, b) when is_sort ty ->
+        let a'' = translate_type context a in
+        let x'  = fresh_var context.dk x in
+        let context_x = {
+          cic = (x, C.Decl a) :: context.cic;
+          dk  = (x', a'') :: context.dk;
+          map = (D.Var x') :: context.map;
+        } in
+        let mx  = (apply (lift 1 t) (C.Rel 1)) in
+        let mx' = translate_term context_x mx in
+        D.Lam (x', a'', mx')
+      | _ -> translate_term context t
+
 
 
   let translate_binding (context, (x, a)) : context * (D.var * D.term) =
@@ -938,7 +962,6 @@ module Translation (I : INFO) = struct
           filter_ind {|M_m_1|} ... {|M_m_n|} return_sort return_type return (c_m y_m_1 ... y_m_nm) -->
           return (c_m y_m_1 ... y_m_nm)
         **)
-
   let translate_filter_scheme leftno ind_name arity constructors sort =
     let sort' = translate_sort' sort in
     let context = empty_context in
@@ -1005,7 +1028,7 @@ module Translation (I : INFO) = struct
       let cons_const' = translate_const (I.baseuri, cons_name) in
       let context = empty_context in
       let context, cons_params' = translate_bindings context cons_params [] in
-      let cons_args' = List.map (translate_term context) cons_args in
+      let cons_args' = List.map (fun x -> eta context x (type_of context x)) cons_args in
       (* Translate return_type *)
       let return_type_name' = fresh_var context.dk "return_type" in
       let quant_var_name' = fresh_var context.dk "z" in
@@ -1120,7 +1143,7 @@ module Translation (I : INFO) = struct
       translate_filter_const (U.baseuri_of_uri ind_uri, U.name_of_uri ind_uri)
     in
     let context, params' = translate_bindings context params [] in
-    let ind_args' = List.map (translate_term context) ind_args in
+    let ind_args' = List.map (fun x -> eta context x (type_of context x)) ind_args in
     let context, rec_param' = translate_binding (context, rec_param) in
     let return_sort = sort_of context return_type in
     let return_type' = translate_term context return_type in

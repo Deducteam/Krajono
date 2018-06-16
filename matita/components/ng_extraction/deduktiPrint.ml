@@ -60,13 +60,21 @@ let print_term out term =
 
 let rec print_abs_pattern out pattern =
   match pattern with
-  | D.PLam (x, a, m) ->
-    F.fprintf out "@[%a :@;<1 2>%a =>@ %a@]"
+  | D.PLam (x, m) ->
+    F.fprintf out "@[%a =>@ %a@]"
       print_var x
-      print_app_pattern a
       print_abs_pattern m
   | _ ->
     F.fprintf out "%a" print_app_pattern pattern
+
+and print_abs_guard_term out term =
+  match term with
+  | D.Lam (x, _, m) ->
+    F.fprintf out "@[%a =>@ %a@]"
+      print_var x
+      print_abs_term m
+  | _ ->
+    F.fprintf out "%a" print_app_term term
 
 and print_app_pattern out pattern =
   match pattern with
@@ -81,7 +89,7 @@ and print_atomic_pattern out pattern =
   match pattern with
   | D.PVar x   -> F.fprintf out "%a" print_var x
   | D.PConst c -> F.fprintf out "%a" print_const c
-  | D.PGuard m -> F.fprintf out "(%a)" print_abs_term m
+  | D.PGuard m -> F.fprintf out "(%a)" print_abs_guard_term m
   | D.PLam _
   | D.PApp _   -> F.fprintf out "(%a)" print_abs_pattern pattern
 
