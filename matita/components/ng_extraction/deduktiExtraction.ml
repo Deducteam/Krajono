@@ -500,13 +500,44 @@ module Translation (I : INFO) = struct
     | n, x :: right when n > 0 -> split_list (i - 1) (x :: left) right
     | _ -> raise (Invalid_argument "split_list")
 
-
   let rec is_sort b =
+      match b with
+      | C.Sort _ -> true
+      | C.Prod (_, _, b) -> is_sort b
+      | _ -> false
+
+  and is_prod_sort b =
     match b with
-    | C.Sort _ -> true
-    | C.Prod (_, _, b) -> is_sort b
+    | C.Prod (_,_,b) -> is_sort b
     | _ -> false
 
+  and eta context t ty =
+      let apply m n =
+        match m with
+        | C.Appl ms -> C.Appl (ms @ [n])
+        | _ -> C.Appl [m; n]
+      in
+      let ty = whd context ty in
+      match ty with
+      | C.Prod (x, a, b) when is_prod_sort ty ->
+        let a'' = translate_type context a in
+        let x'  = fresh_var context.dk x in
+        let context_x = {
+          cic = (x, C.Decl a) :: context.cic;
+          dk  = (x', a'') :: context.dk;
+          map = (D.Var x') :: context.map;
+        } in
+        let mx  = (apply (lift 1 t) (C.Rel 1)) in
+        let mx' = translate_term context_x mx in
+        D.Lam (x', a'', mx')
+      | _ -> translate_term context t
+
+  and translate_term_eta context term =
+    let ty = whd context (type_of context term) in
+    if is_prod_sort ty then
+      eta context term ty
+    else
+      translate_term context term
 
   and translate_term context term =
     match term with
@@ -599,8 +630,12 @@ module Translation (I : INFO) = struct
         let match_const' =
           translate_match_const (ind_baseuri, ind_name) return_sort
         in
-        let return_type' = translate_term_as context return_type (type_of context return_type) in
-        let cases' = List.map (translate_term context) cases in
+        Format.eprintf "%a@." (pp ~ctx:context.cic) term;
+        Format.eprintf "%a@." (pp ~ctx:context.cic) return_type;
+        Format.eprintf "%a@." (pp ~ctx:context.cic) (type_of context return_type);
+        Format.eprintf "%b@." (is_prod_sort (type_of context return_type));
+        let return_type' = translate_term_eta context return_type in
+        let cases' = List.map (translate_term_eta context) cases in
         let ind_args' = translate_args context ind_args ind_arity in
         let left_ind_args', right_ind_args' = split_list leftno [] ind_args' in
         let matched' = translate_term context matched in
@@ -641,7 +676,7 @@ module Translation (I : INFO) = struct
       | C.Sort s ->
         let s' = translate_sort s in
         let term' = translate_term context term in cast_term s' s' term'
-      | t when is_sort ty -> translate_cast context term ty
+      | t when is_prod_sort ty -> translate_cast context term ty
       | _ -> translate_term context term
     else
       translate_cast context term ty
@@ -688,30 +723,6 @@ module Translation (I : INFO) = struct
         let n' = translate_term_as context n a in
         let ns' = translate_args context ns (subst n b) in
         n' :: ns'
-
-
-    let eta context t ty =
-      let apply m n =
-        match m with
-        | C.Appl ms -> C.Appl (ms @ [n])
-        | _ -> C.Appl [m; n]
-      in
-      let ty = whd context ty in
-      match ty with
-      | C.Prod (x, a, b) when is_sort ty ->
-        let a'' = translate_type context a in
-        let x'  = fresh_var context.dk x in
-        let context_x = {
-          cic = (x, C.Decl a) :: context.cic;
-          dk  = (x', a'') :: context.dk;
-          map = (D.Var x') :: context.map;
-        } in
-        let mx  = (apply (lift 1 t) (C.Rel 1)) in
-        let mx' = translate_term context_x mx in
-        D.Lam (x', a'', mx')
-      | _ -> translate_term context t
-
-
 
   let translate_binding (context, (x, a)) : context * (D.var * D.term) =
     let a'' = translate_type context a in
