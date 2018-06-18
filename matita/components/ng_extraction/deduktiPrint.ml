@@ -72,7 +72,7 @@ and print_abs_guard_term out term =
   | D.Lam (x, _, m) ->
     F.fprintf out "@[%a =>@ %a@]"
       print_var x
-      print_abs_term m
+      print_abs_guard_term m
   | _ ->
     F.fprintf out "%a" print_app_term term
 

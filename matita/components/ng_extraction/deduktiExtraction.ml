@@ -520,7 +520,7 @@ module Translation (I : INFO) = struct
       let ty = whd context ty in
       match ty with
       | C.Prod (x, a, b) when is_prod_sort ty ->
-        let a'' = translate_type context a in
+        let a'' = translate_type_eta context a in
         let x'  = fresh_var context.dk x in
         let context_x = {
           cic = (x, C.Decl a) :: context.cic;
@@ -528,7 +528,7 @@ module Translation (I : INFO) = struct
           map = (D.Var x') :: context.map;
         } in
         let mx  = (apply (lift 1 t) (C.Rel 1)) in
-        let mx' = translate_term context_x mx in
+        let mx' = translate_term_eta context_x mx in
         D.Lam (x', a'', mx')
       | _ -> translate_term context t
 
@@ -539,9 +539,33 @@ module Translation (I : INFO) = struct
     else
       translate_term context term
 
-  and translate_term context term =
+  and translate_term ?(eta=false) context term =
     match term with
-    | C.Rel i -> List.nth context.map (i - 1)
+    | C.Rel i ->
+      if eta then
+        let apply m n =
+          match m with
+          | C.Appl ms -> C.Appl (ms @ [n])
+          | _ -> C.Appl [m; n]
+        in
+        let ty = match List.nth context.cic (i-1) with | (_,C.Decl ty) -> ty | _ -> assert false
+        in
+        let ty = whd context ty in
+        match ty with
+        | C.Prod (x, a, b) when is_prod_sort ty ->
+          let a'' = translate_type ~eta:true context a in
+          let x'  = fresh_var context.dk x in
+          let context_x = {
+            cic = (x, C.Decl a) :: context.cic;
+            dk  = (x', a'') :: context.dk;
+            map = (D.Var x') :: context.map;
+          } in
+          let mx  = (apply (lift 1 term) (C.Rel 1)) in
+          let mx' = translate_term ~eta:true context_x mx in
+          D.Lam (x', a'', mx')
+        | _ -> translate_term context term
+      else
+        List.nth context.map (i - 1)
     | C.Meta _ ->
         (* There should be no unresolved meta-variables at this point. *)
         assert false
@@ -550,13 +574,13 @@ module Translation (I : INFO) = struct
         assert false
     | C.Appl (m :: ns) ->
       let a = type_of context m in
-      let m' = translate_term context m in
+      let m' = translate_term ~eta context m in
       let ns' = translate_args context ns a in
       D.apps m' ns'
     | C.Prod (x, a, b) ->
         let s1 = sort_of context a in
         let s1' = translate_sort s1 in
-        let a' = translate_term context a in
+        let a' = translate_term ~eta context a in
         let a'' = translate_type context a in
         let x' = fresh_var context.dk x in
         let context_x =
@@ -566,7 +590,7 @@ module Translation (I : INFO) = struct
         in
         let s2 = sort_of context_x b in
         let s2' = translate_sort s2 in
-        let b' = translate_term context_x b in
+        let b' = translate_term ~eta context_x b in
         prod_term s1' s2' a' (D.Lam (x', a'', b'))
     | C.Lambda (x, a, m) ->
         let a'' = translate_type context a in
@@ -576,11 +600,11 @@ module Translation (I : INFO) = struct
           ; dk= (x', a'') :: context.dk
           ; map= D.Var x' :: context.map }
         in
-        let m' = translate_term context_x m in
+        let m' = translate_term ~eta context_x m in
         D.Lam (x', a'', m')
     | C.LetIn (x, a, n, m) ->
-        let a' = translate_type context a in
-        let n' = translate_term context n in
+        let a' = translate_type ~eta context a in
+        let n' = translate_term ~eta context n in
         let c' = fresh_const (I.baseuri, Format.sprintf "let_%s" x) in
         let () = Hashtbl.add constants_table c' () in
         let lifted_a' = to_cic_prods context.dk a' in
@@ -629,33 +653,33 @@ module Translation (I : INFO) = struct
         in
         let match_const' =
           translate_match_const (ind_baseuri, ind_name) return_sort
-        in
+        in (*
         Format.eprintf "%a@." (pp ~ctx:context.cic) term;
         Format.eprintf "%a@." (pp ~ctx:context.cic) return_type;
         Format.eprintf "%a@." (pp ~ctx:context.cic) (type_of context return_type);
-        Format.eprintf "%b@." (is_prod_sort (type_of context return_type));
+        Format.eprintf "%b@." (is_prod_sort (type_of context return_type)); *)
         let return_type' = translate_term_eta context return_type in
         let cases' = List.map (translate_term_eta context) cases in
         let ind_args' = translate_args context ind_args ind_arity in
         let left_ind_args', right_ind_args' = split_list leftno [] ind_args' in
-        let matched' = translate_term context matched in
+        let matched' = translate_term_eta context matched in
         D.apps (D.Const match_const')
           ( left_ind_args' @ [return_type'] @ cases' @ right_ind_args'
           @ [matched'] )
     | C.Match _ -> failwith "invalid match"
 
 
-  and translate_type context ty =
+  and translate_type ?(eta=false) context ty =
     match ty with
     | C.Prod (x, a, b) ->
-        let a'' = translate_type context a in
+        let a'' = translate_type ~eta context a in
         let x' = fresh_var context.dk x in
         let context_x =
           { cic= (x, C.Decl a) :: context.cic
           ; dk= (x', a'') :: context.dk
           ; map= D.Var x' :: context.map }
         in
-        let b'' = translate_type context_x b in
+        let b'' = translate_type ~eta context_x b in
         to_cic_prods [(x', a'')] b''
     | C.Sort s ->
         let s' = translate_sort s in
@@ -663,7 +687,29 @@ module Translation (I : INFO) = struct
     | _ ->
         let s = sort_of context ty in
         let s' = translate_sort s in
-        let ty' = translate_term context ty in
+        let ty' = translate_term ~eta context ty in
+        term_type s' ty'
+
+  and translate_type_eta context ty =
+    Format.eprintf "eta: %a@." (pp ~ctx:context.cic) ty;
+    match ty with
+    | C.Prod (x, a, b) ->
+        let a'' = translate_type_eta context a in
+        let x' = fresh_var context.dk x in
+        let context_x =
+          { cic= (x, C.Decl a) :: context.cic
+          ; dk= (x', a'') :: context.dk
+          ; map= D.Var x' :: context.map }
+        in
+        let b'' = translate_type_eta context_x b in
+        to_cic_prods [(x', a'')] b''
+    | C.Sort s ->
+        let s' = translate_sort s in
+        univ_type s'
+    | _ ->
+        let s = sort_of context ty in
+        let s' = translate_sort s in
+        let ty' = translate_term_eta context ty in
         term_type s' ty'
 
   (** Translate a term according to the given type. If the type does not
@@ -725,7 +771,7 @@ module Translation (I : INFO) = struct
         n' :: ns'
 
   let translate_binding (context, (x, a)) : context * (D.var * D.term) =
-    let a'' = translate_type context a in
+    let a'' = translate_type_eta context a in
     let x' = fresh_var context.dk x in
     let context_x =
       { cic= (x, C.Decl a) :: context.cic
@@ -739,7 +785,7 @@ module Translation (I : INFO) = struct
       translated : context * (D.var * D.term) list =
     match bindings with
     | (x, a) :: bindings ->
-        let context_x, (x', a'') = translate_binding (context, (x, a)) in
+        let context_x, (x', a'') = translate_binding (context, (x, whd context a)) in
         translate_bindings context_x bindings ((x', a'') :: translated)
     | [] -> (context, List.rev translated)
 
@@ -762,6 +808,17 @@ module Translation (I : INFO) = struct
   let translate_constructor leftno (_, name, ty) =
     translate_declaration name ty
 
+
+  let rec is_sort_product ty =
+    match ty with
+    | D.App(D.Const (_, s), _) when s = "Univ" || s = "univ" -> true
+    | D.App(D.App(D.Const (_,s), _), a) when s = "Term" -> is_prod_product a
+    | _ -> false
+
+  and is_prod_product ty =
+    match ty with
+    | D.App(D.App(D.App(D.App(D.Const(_,s),_),_),_),D.Lam(_,_,ty)) when s = "prod" -> is_prod_product ty
+    | _ -> is_sort_product ty
 
   (** Translate the match elimination scheme for the given inductive type.
 
@@ -844,6 +901,7 @@ module Translation (I : INFO) = struct
       term_type ind_sort'
         (D.app_bindings ind' (left_params' @ right_ind_params'))
     in
+
     let return_type_type' =
       to_cic_prods
         (List.rev (right_ind_params' @ [(quant_var_name', quant_var_type')]))
@@ -864,8 +922,10 @@ module Translation (I : INFO) = struct
         translate_bindings context right_cons_params []
       in
       let right_cons_args' =
-        List.map (translate_term context) right_cons_args
+        List.map (translate_term_eta context) right_cons_args
       in
+(*      Format.eprintf "case_%s" cons_name;
+        List.iter (fun (v,t) -> Format.eprintf "%s,%a@.@." v DeduktiPrint.print_term t;) right_cons_params'; *)
       let case_type' =
         to_cic_prods
           (List.rev right_cons_params')
@@ -874,6 +934,12 @@ module Translation (I : INFO) = struct
                 ( right_cons_args'
                 @ [D.app_bindings cons' (left_params' @ right_cons_params')] )))
       in
+      Format.eprintf "%a@." DeduktiPrint.print_term case_type';
+      List.iter (fun (v,x) ->Format.eprintf "%s:%a@." v DeduktiPrint.print_term x) right_cons_params';
+      Format.eprintf "@.";
+      List.iter (fun x ->Format.eprintf "%a@." DeduktiPrint.print_term x) right_cons_args';
+      Format.eprintf "@.";
+      List.iter (fun (v,x) ->Format.eprintf "%s:%a@." v DeduktiPrint.print_term x) left_params';
       (case_name', case_type')
     in
     let rec translate_cases context cons_infos translated =
@@ -924,7 +990,7 @@ module Translation (I : INFO) = struct
         translate_bindings context right_cons_params []
       in
       let right_cons_args' =
-        List.map (translate_term context) right_cons_args
+        List.map (translate_term_eta context) right_cons_args
       in
       let left_pattern' =
         D.papps
@@ -1039,7 +1105,7 @@ module Translation (I : INFO) = struct
       let cons_const' = translate_const (I.baseuri, cons_name) in
       let context = empty_context in
       let context, cons_params' = translate_bindings context cons_params [] in
-      let cons_args' = List.map (fun x -> eta context x (type_of context x)) cons_args in
+      let cons_args' = List.map (translate_term_eta context) cons_args in
       (* Translate return_type *)
       let return_type_name' = fresh_var context.dk "return_type" in
       let quant_var_name' = fresh_var context.dk "z" in
@@ -1154,10 +1220,10 @@ module Translation (I : INFO) = struct
       translate_filter_const (U.baseuri_of_uri ind_uri, U.name_of_uri ind_uri)
     in
     let context, params' = translate_bindings context params [] in
-    let ind_args' = List.map (fun x -> eta context x (type_of context x)) ind_args in
+    let ind_args' = List.map (translate_term_eta context) ind_args in
     let context, rec_param' = translate_binding (context, rec_param) in
     let return_sort = sort_of context return_type in
-    let return_type' = translate_term context return_type in
+    let return_type' = translate_term_eta context return_type in
     let return_type'' = translate_type context return_type in
     let fun_const_type'' =
       to_cic_prods (List.rev (params' @ [rec_param'])) return_type''
@@ -1177,7 +1243,7 @@ module Translation (I : INFO) = struct
          let definitions referring to the functions inside the body will
          be lifted before the function declarations, and therefore not
         typecheck. *)
-    let return' = translate_term context return in
+    let return' = translate_term_eta context return in
     let left_fun_pattern' =
       D.papp_bindings (D.PConst fun_const') (params' @ [rec_param'])
     in

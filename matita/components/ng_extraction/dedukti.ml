@@ -45,13 +45,13 @@ let extract_sort ty =
 let rec is_sort_product ty =
   match ty with
   | App(Const (_, s), _) when s = "Univ" || s = "univ" -> true
-  | App(App(Const (_,s), _), a) -> is_prod_product a
+  | App(App(Const (_,s), _), a) when s = "Term" -> is_prod_product a
   | _ -> false
 
 and is_prod_product ty =
   match ty with
-  | App(App(App(App(Const(_,s),_),_),_),Lam(_,_,ty)) when s = "prod" -> is_sort_product ty
-  | _ -> false
+  | App(App(App(App(Const(_,s),_),_),_),Lam(_,_,ty)) when s = "prod" -> is_prod_product ty
+  | _ -> is_sort_product ty
 
 let get_sort_product ty =
   match ty with
@@ -71,9 +71,9 @@ let eta t x ty =
   let rec down t =
     match t with
     | Lam(y,ty,te) -> Lam(y,ty,down te)
-    | _ -> App(t,Var x)
+    | _ ->   Lam(x,ty,App(t,Var x))
   in
-  Lam(x,ty,down t)
+  down t
 
 let translate_sort_product t ty =
   let rec get_bindings ty =
@@ -119,9 +119,9 @@ let peta t x ty =
   let rec down t =
     match t with
     | PLam(y,te) -> PLam(y,down te)
-    | _ -> PApp(t,PVar x)
+    | _ ->   PLam(x,PApp(t,PVar x))
   in
-  PLam(x,down t)
+  down t
 
 let ptranslate_sort_product t ty =
   let rec get_bindings ty =
