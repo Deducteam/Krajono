@@ -5,6 +5,11 @@ module P = NCicPp
 module D = Dedukti
 module F = Format
 
+(**** TODO ****)
+(* - comment the code, especially stuff related to eta *)
+(* - It would be better to translate inductive types first in Matita then use the code to translate it into Dedukti. Right now, the code is ugly and really hard to maintain *)
+(* - Put some functions from Dedukti.ml here, especially stuff such as apps_* and papps_* *)
+
 let pp ?(ctx= []) fmt term =
   Format.fprintf fmt "%s@." (new P.status#ppterm ctx [] [] term)
 
