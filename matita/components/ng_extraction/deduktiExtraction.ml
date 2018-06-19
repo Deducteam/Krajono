@@ -522,6 +522,7 @@ module Translation (I : INFO) = struct
       | C.Prod (x, a, b) when is_prod_sort ty ->
         let a'' = translate_type_eta context a in
         let x'  = fresh_var context.dk x in
+        (*        Format.eprintf "eta %s:%a@." x' DeduktiPrint.print_term a''; *)
         let context_x = {
           cic = (x, C.Decl a) :: context.cic;
           dk  = (x', a'') :: context.dk;
@@ -537,34 +538,11 @@ module Translation (I : INFO) = struct
     if is_prod_sort ty then
       eta context term ty
     else
-      translate_term context term
+      translate_term ~eta:true context term
 
   and translate_term ?(eta=false) context term =
     match term with
     | C.Rel i ->
-      if eta then
-        let apply m n =
-          match m with
-          | C.Appl ms -> C.Appl (ms @ [n])
-          | _ -> C.Appl [m; n]
-        in
-        let ty = match List.nth context.cic (i-1) with | (_,C.Decl ty) -> ty | _ -> assert false
-        in
-        let ty = whd context ty in
-        match ty with
-        | C.Prod (x, a, b) when is_prod_sort ty ->
-          let a'' = translate_type ~eta:true context a in
-          let x'  = fresh_var context.dk x in
-          let context_x = {
-            cic = (x, C.Decl a) :: context.cic;
-            dk  = (x', a'') :: context.dk;
-            map = (D.Var x') :: context.map;
-          } in
-          let mx  = (apply (lift 1 term) (C.Rel 1)) in
-          let mx' = translate_term ~eta:true context_x mx in
-          D.Lam (x', a'', mx')
-        | _ -> translate_term context term
-      else
         List.nth context.map (i - 1)
     | C.Meta _ ->
         (* There should be no unresolved meta-variables at this point. *)
@@ -691,7 +669,6 @@ module Translation (I : INFO) = struct
         term_type s' ty'
 
   and translate_type_eta context ty =
-    Format.eprintf "eta: %a@." (pp ~ctx:context.cic) ty;
     match ty with
     | C.Prod (x, a, b) ->
         let a'' = translate_type_eta context a in
@@ -722,7 +699,7 @@ module Translation (I : INFO) = struct
       | C.Sort s ->
         let s' = translate_sort s in
         let term' = translate_term context term in cast_term s' s' term'
-      | t when is_prod_sort ty -> translate_cast context term ty
+      | t when is_prod_sort (whd context ty) -> translate_cast context term ty
       | _ -> translate_term context term
     else
       translate_cast context term ty
@@ -773,6 +750,7 @@ module Translation (I : INFO) = struct
   let translate_binding (context, (x, a)) : context * (D.var * D.term) =
     let a'' = translate_type_eta context a in
     let x' = fresh_var context.dk x in
+    (*    Format.eprintf "binding %s:%a@." x' DeduktiPrint.print_term a''; *)
     let context_x =
       { cic= (x, C.Decl a) :: context.cic
       ; dk= (x', a'') :: context.dk
@@ -785,8 +763,8 @@ module Translation (I : INFO) = struct
       translated : context * (D.var * D.term) list =
     match bindings with
     | (x, a) :: bindings ->
-        let context_x, (x', a'') = translate_binding (context, (x, whd context a)) in
-        translate_bindings context_x bindings ((x', a'') :: translated)
+      let context_x, (x', a'') = translate_binding (context, (x, whd context a)) in
+      translate_bindings context_x bindings ((x', a'') :: translated)
     | [] -> (context, List.rev translated)
 
 
@@ -924,8 +902,6 @@ module Translation (I : INFO) = struct
       let right_cons_args' =
         List.map (translate_term_eta context) right_cons_args
       in
-(*      Format.eprintf "case_%s" cons_name;
-        List.iter (fun (v,t) -> Format.eprintf "%s,%a@.@." v DeduktiPrint.print_term t;) right_cons_params'; *)
       let case_type' =
         to_cic_prods
           (List.rev right_cons_params')
@@ -933,24 +909,25 @@ module Translation (I : INFO) = struct
              (D.apps return_type'
                 ( right_cons_args'
                 @ [D.app_bindings cons' (left_params' @ right_cons_params')] )))
-      in
+      in (*
+      Format.eprintf "case_%s@." cons_name;
       Format.eprintf "%a@." DeduktiPrint.print_term case_type';
       List.iter (fun (v,x) ->Format.eprintf "%s:%a@." v DeduktiPrint.print_term x) right_cons_params';
       Format.eprintf "@.";
       List.iter (fun x ->Format.eprintf "%a@." DeduktiPrint.print_term x) right_cons_args';
       Format.eprintf "@.";
-      List.iter (fun (v,x) ->Format.eprintf "%s:%a@." v DeduktiPrint.print_term x) left_params';
+      List.iter (fun (v,x) ->Format.eprintf "%s:%a@." v DeduktiPrint.print_term x) left_params'; *)
       (case_name', case_type')
     in
     let rec translate_cases context cons_infos translated =
       match cons_infos with
       | cons_info :: cons_infos ->
-          let case_name', case_type' = translate_case cons_info in
-          let context =
-            {context with dk= (case_name', case_type') :: context.dk}
-          in
-          let case' = D.Var case_name' in
-          translate_cases context cons_infos (case' :: translated)
+        let case_name', case_type' = translate_case cons_info in
+        let context =
+          {context with dk= (case_name', case_type') :: context.dk}
+        in
+        let case' = D.Var case_name' in
+        translate_cases context cons_infos (case' :: translated)
       | [] -> (context, List.rev translated)
     in
     let context, cases' = translate_cases context cons_infos [] in
