@@ -1,14 +1,14 @@
 (* Copyright (C) 2004-2005, HELM Team.
- * 
+ *
  * This file is part of HELM, an Hypertextual, Electronic
  * Library of Mathematics, developed at the Computer Science
  * Department, University of Bologna, Italy.
- * 
+ *
  * HELM is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License
  * as published by the Free Software Foundation; either version 2
  * of the License, or (at your option) any later version.
- * 
+ *
  * HELM is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
@@ -18,7 +18,7 @@
  * along with HELM; if not, write to the Free Software
  * Foundation, Inc., 59 Temple Place - Suite 330, Boston,
  * MA  02111-1307, USA.
- * 
+ *
  * For details, see the HELM World-Wide-Web page,
  * http://helm.cs.unibo.it/
  *)
@@ -88,9 +88,9 @@ let binder_symbol s =
   add_xml_attrs (RenderingAttrs.builtin_symbol_attributes `MathML)
     (builtin_symbol s)
 
-let xml_of_sort x = 
+let xml_of_sort x =
   let to_string x = Ast.Ident (x, None) in
-  let identify x = 
+  let identify x =
     add_xml_attrs (RenderingAttrs.keyword_attributes `MathML) (to_string x)
   in
   let lvl t = Ast.AttributedTerm (`Level 90,t) in
@@ -121,7 +121,7 @@ let pp_ast0 status t k =
           | hd :: tl ->
               (Ast.AttributedTerm (`Level level, k hd)) :: aux_args 71 tl
         in
-        add_level_info Ast.apply_prec 
+        add_level_info Ast.apply_prec
           (hovbox true true (NotationUtil.dress break (aux_args 70 ts)))
     | Ast.Binder (binder_kind, (id, ty), body) ->
         add_level_info Ast.binder_prec
@@ -159,7 +159,7 @@ let pp_ast0 status t k =
         let mk_case_pattern =
          function
             Ast.Pattern (head, href, vars) ->
-             hvbox true true (ident_w_href href head :: 
+             hvbox true true (ident_w_href href head ::
                List.flatten (List.map (fun x -> [break;x]) (map_space aux_var vars)))
           | Ast.Wildcard -> builtin_symbol "_"
         in
@@ -167,8 +167,8 @@ let pp_ast0 status t k =
           List.map
             (fun (lhs, rhs) ->
               remove_level_info
-                (hovbox false true [ 
-                  mk_case_pattern lhs; break; builtin_symbol "\\Rightarrow"; 
+                (hovbox false true [
+                  mk_case_pattern lhs; break; builtin_symbol "\\Rightarrow";
                   break; top_pos (k rhs) ]))
             patterns
         in
@@ -176,7 +176,7 @@ let pp_ast0 status t k =
           let rec aux_patterns = function
             | [] -> assert false
             | [ last ] ->
-                [ break; 
+                [ break;
                   hbox false false [
                     builtin_symbol "|";
                     last; builtin_symbol "]" ] ]
@@ -204,7 +204,7 @@ let pp_ast0 status t k =
             builtin_symbol "("; top_pos (k bo); break; builtin_symbol ":";
             top_pos (k ty); builtin_symbol ")"])
     | Ast.LetIn (var, s, t) ->
-        add_level_info Ast.let_in_prec 
+        add_level_info Ast.let_in_prec
           (hvbox false true [
             hvbox false true [
               keyword "let"; space;
@@ -311,18 +311,18 @@ let initial_db = {
  level1_patterns21 = IntMap.empty;
  compiled21 = lazy (Content2presMatcher.Matcher21.compiler []);
  pattern21_matrix = [];
- counter = ~-1 
+ counter = ~-1
 }
 
 class type g_status =
   object
     method content_pres_db: db
   end
- 
+
 class virtual status =
  object
    inherit NCic.status
-   val content_pres_db = initial_db  
+   val content_pres_db = initial_db
    method content_pres_db = content_pres_db
    method set_content_pres_db v = {< content_pres_db = v >}
    method set_content_pres_status
@@ -368,9 +368,9 @@ let instantiate21 idrefs env l1 =
           assert false
          end;
         let value = NotationEnv.term_of_value value in
-        let value = 
+        let value =
           match expected_ty with
-          | Env.TermType l -> Ast.AttributedTerm (`Level l,value) 
+          | Env.TermType l -> Ast.AttributedTerm (`Level l,value)
           | _ -> value
         in
         [ value ]
@@ -456,14 +456,14 @@ let instantiate21 idrefs env l1 =
   in
     subst_singleton `Left env l1
 
-let rec pp_ast1 status term = 
+let rec pp_ast1 status term =
   let rec pp_value = function
     | NotationEnv.NumValue _ as v -> v
     | NotationEnv.StringValue _ as v -> v
 (*     | NotationEnv.TermValue t when t == term -> NotationEnv.TermValue (pp_ast0 status t pp_ast1) *)
     | NotationEnv.TermValue t -> NotationEnv.TermValue (pp_ast1 status t)
     | NotationEnv.OptValue None as v -> v
-    | NotationEnv.OptValue (Some v) -> 
+    | NotationEnv.OptValue (Some v) ->
         NotationEnv.OptValue (Some (pp_value v))
     | NotationEnv.ListValue vl ->
         NotationEnv.ListValue (List.map pp_value vl)
@@ -502,7 +502,7 @@ let fill_pos_info l1_pattern = l1_pattern
 (*   let rec aux toplevel pos =
     function
     | Ast.Layout l ->
-        (match l 
+        (match l
 
     | Ast.Magic m ->
         Ast.Box (
@@ -525,7 +525,7 @@ let add_pretty_printer status l2 (CicNotationParser.CL1P (l1,precedence)) =
        level1_patterns21 =
         IntMap.add id l1' status#content_pres_db.level1_patterns21;
        pattern21_matrix = (l2',id)::status#content_pres_db.pattern21_matrix } in
-  load_patterns21 status status#content_pres_db.pattern21_matrix 
+  load_patterns21 status status#content_pres_db.pattern21_matrix
 
   (* presentation -> content *)
 
@@ -596,11 +596,11 @@ let instantiate_level2 status env term =
           List.map (aux_branch env) patterns)
     | Ast.LetIn (var, t1, t3) ->
         Ast.LetIn (aux_capture_var env var, aux env t1, aux env t3)
-(*    
+(*
     | Ast.LetRec (kind, definitions, body) ->
         Ast.LetRec (kind, List.map (aux_definition env) definitions,
           aux env body)
-*)    
+*)
     | Ast.Uri (name, None) -> Ast.Uri (name, None)
     | Ast.Uri (name, Some substs) ->
         Ast.Uri (name, Some (aux_substs env substs))
@@ -632,8 +632,8 @@ let instantiate_level2 status env term =
       Ast.Pattern (head, hrefs, vars) ->
        Ast.Pattern (head, hrefs, List.map (aux_capture_var env) vars)
     | Ast.Wildcard -> Ast.Wildcard
-  and aux_definition env (params, var, term, i) =
-    (List.map (aux_capture_var env) params, aux_capture_var env var, aux env term, i)
+(*  and aux_definition env (params, var, term, i) =
+    (List.map (aux_capture_var env) params, aux_capture_var env var, aux env term, i) *)
   and aux_substs env substs =
     List.map (fun (name, term) -> (name, aux env term)) substs
   and aux_meta_substs env meta_substs = List.map (aux_opt env) meta_substs
@@ -643,7 +643,7 @@ let instantiate_level2 status env term =
        (match Env.lookup_string env name with
            Env.Ident x -> Ast.Ident (x, None)
          | Env.Var x -> Ast.Variable (Ast.IdentVar x))
-    | Ast.TermVar (name,(Ast.Level l|Ast.Self l)) -> 
+    | Ast.TermVar (name,(Ast.Level l|Ast.Self l)) ->
         Ast.AttributedTerm (`Level l,Env.lookup_term env name)
     | Ast.FreshVar name -> Ast.Ident (lookup_fresh_name name, None)
     | Ast.Ascription (term, name) -> assert false
@@ -683,7 +683,7 @@ let instantiate_level2 status env term =
             let rec instantiate_fold_left acc env' =
               match Env.lookup_value env' name with
               | Env.ListValue (_ :: _) ->
-                  instantiate_fold_left 
+                  instantiate_fold_left
                     (let acc_binding =
                       acc_name, (Env.TermType 0, Env.TermValue acc)
                      in

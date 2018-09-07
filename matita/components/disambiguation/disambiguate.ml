@@ -1,14 +1,14 @@
 (* Copyright (C) 2004, HELM Team.
- * 
+ *
  * This file is part of HELM, an Hypertextual, Electronic
  * Library of Mathematics, developed at the Computer Science
  * Department, University of Bologna, Italy.
- * 
+ *
  * HELM is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License
  * as published by the Free Software Foundation; either version 2
  * of the License, or (at your option) any later version.
- * 
+ *
  * HELM is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
@@ -18,7 +18,7 @@
  * along with HELM; if not, write to the Free Software
  * Foundation, Inc., 59 Temple Place - Suite 330, Boston,
  * MA  02111-1307, USA.
- * 
+ *
  * For details, see the HELM World-Wide-Web page,
  * http://helm.cs.unibo.it/
  *)
@@ -73,7 +73,7 @@ let input_or_locate_uri ~(title:string) ?id () = None
   (* Zack: I try to avoid using this callback. I therefore assume that
   * the presence of an identifier that can't be resolved via "locate"
   * query is a syntax error *)
-  
+
 
 let rec string_of_domain =
  function
@@ -141,8 +141,8 @@ let resolve ~env ~mk_choice (item: domain_item) arg =
     | `Sym_interp f, `Args l -> f l
     | `Sym_interp f, `Num_arg n -> (* Implicit number! *) f []
     | _,_ -> assert false
-  with Not_found -> 
-    failwith ("Domain item not found: " ^ 
+  with Not_found ->
+    failwith ("Domain item not found: " ^
       (DisambiguateTypes.string_of_domain_item item))
 
   (* TODO move it to Cic *)
@@ -300,7 +300,7 @@ and domain_of_term_option ~loc ~context = function
   | None -> []
   | Some t -> domain_of_term ~loc ~context t
 
-let domain_of_term ~context term = 
+let domain_of_term ~context term =
  uniq_domain (domain_of_term ~context term)
 
 let domain_of_term_option ~context = function
@@ -316,7 +316,7 @@ let domain_of_obj ~context ast =
           None -> []
         | Some bo -> domain_of_term [] bo)
    | Ast.Inductive (params,tyl,_) ->
-      let context, dom = 
+      let context, dom =
        List.fold_left
         (fun (context, dom) (var, ty) ->
           let context' = string_of_name var :: context in
@@ -336,7 +336,7 @@ let domain_of_obj ~context ast =
                 (fun (_,ty) -> domain_of_term context_w_types ty) cl))
                 tyl)
    | Ast.Record (params,var,ty,fields,_) ->
-      let context, dom = 
+      let context, dom =
        List.fold_left
         (fun (context, dom) (var, ty) ->
           let context' = string_of_name var :: context in
@@ -380,7 +380,7 @@ let domain_of_obj ~context ast =
       in
       defs_dom
 
-let domain_of_obj ~context obj = 
+let domain_of_obj ~context obj =
  uniq_domain (domain_of_obj ~context obj)
 
   (* dom1 \ dom2 *)
@@ -410,13 +410,13 @@ let domain_diff dom1 dom2 =
 
 let refine_profiler = HExtlib.profile "disambiguate_thing.refine_thing"
 
-let disambiguate_thing 
+let disambiguate_thing
   ~context ~metasenv ~subst ~use_coercions
   ~string_context_of_context
   ~initial_ugraph:base_univ ~expty
   ~mk_implicit ~description_of_alias ~fix_instance
-  ~aliases ~universe ~lookup_in_library 
-  ~uri ~pp_thing ~domain_of_thing ~interpretate_thing ~refine_thing 
+  ~aliases ~universe ~lookup_in_library
+  ~uri ~pp_thing ~domain_of_thing ~interpretate_thing ~refine_thing
   ~mk_localization_tbl
   (thing_txt,thing_txt_prefix_len,thing)
 =
@@ -435,9 +435,9 @@ let disambiguate_thing
    let lookup_choices =
      fun item ->
       match universe with
-      | None -> 
-          lookup_in_library 
-            interactive_user_uri_choice 
+      | None ->
+          lookup_in_library
+            interactive_user_uri_choice
             input_or_locate_uri item
       | Some e ->
           (try
@@ -446,10 +446,10 @@ let disambiguate_thing
    in
 
    (* items with 1 choice are interpreted ASAP *)
-   let aliases, todo_dom = 
-     let rec aux (aliases,acc) = function 
+   let aliases, todo_dom =
+     let rec aux (aliases,acc) = function
        | [] -> aliases, acc
-       | (Node (locs, item,extra) as node) :: tl -> 
+       | (Node (locs, item,extra)) :: tl ->
            let choices = lookup_choices item in
            if List.length choices = 0 then
             (* Quick failure *)
@@ -494,7 +494,7 @@ let disambiguate_thing
 
    (* (3) test an interpretation filling with meta uninterpreted identifiers
     *)
-   let test_env aliases todo_dom ugraph = 
+   let test_env aliases todo_dom ugraph =
      try
       let rec aux env = function
        | [] -> env
@@ -529,7 +529,7 @@ in refine_profiler.HExtlib.profile foo ()
      | [] ->
          assert (lookup_in_todo_dom = None);
          (match test_env aliases rem_dom base_univ with
-         | Ok (thing, metasenv,subst,new_univ) -> 
+         | Ok (thing, metasenv,subst,new_univ) ->
             [ aliases, diff, metasenv, subst, thing, new_univ ], [], []
          | Ko loc_msg -> [],[],[aliases,diff,loc_msg,true]
          | Uncertain loc_msg ->
@@ -544,7 +544,7 @@ in refine_profiler.HExtlib.profile foo ()
          match choices with
             [] ->
              [], [],
-              [aliases, diff, 
+              [aliases, diff,
                (lazy (List.hd locs,
                  "No choices for " ^ string_of_domain_item item)),
                true]
@@ -559,27 +559,27 @@ in refine_profiler.HExtlib.profile foo ()
                 ok_l,uncertain_l,mark_not_significant error_l
                else
                 outcome in
-            let rec filter = function 
+            let rec filter = function
              | [] -> [],[],[]
              | codomain_item :: tl ->
                  (*debug_print(lazy (sprintf "%s CHOSEN" (fst codomain_item)));*)
                 let new_env = Environment.add item codomain_item aliases in
                 let new_diff = (item,codomain_item)::diff in
                 (match
-                  test_env new_env 
+                  test_env new_env
                     (inner_dom@remaining_dom@rem_dom) base_univ
                  with
                 | Ok (thing, metasenv,subst,new_univ) ->
 (*prerr_endline ((sprintf "CHOOSED ITEM OK: %s" (string_of_domain_item item)));*)
-                    let res = 
+                    let res =
                       (match inner_dom with
                       | [] ->
                          [new_env,new_diff,metasenv,subst,thing,new_univ],
                          [], []
                       | _ ->
                          aux new_env new_diff None inner_dom
-                          (remaining_dom@rem_dom) 
-                      ) 
+                          (remaining_dom@rem_dom)
+                      )
                     in
                      res @@ filter tl
                 | Uncertain loc_msg ->
@@ -589,7 +589,7 @@ in refine_profiler.HExtlib.profile foo ()
                       | [] -> [],[new_env,new_diff,loc_msg],[]
                       | _ ->
                          aux new_env new_diff None inner_dom
-                          (remaining_dom@rem_dom) 
+                          (remaining_dom@rem_dom)
                       )
                     in
                      res @@ filter tl
@@ -614,12 +614,12 @@ in refine_profiler.HExtlib.profile foo ()
   in
   let aux' aliases diff lookup_in_todo_dom todo_dom =
    if todo_dom = [] then
-     aux aliases diff lookup_in_todo_dom todo_dom [] 
+     aux aliases diff lookup_in_todo_dom todo_dom []
    else
      match test_env aliases todo_dom base_univ with
-      | Ok _ 
+      | Ok _
       | Uncertain _ ->
-         aux aliases diff lookup_in_todo_dom todo_dom [] 
+         aux aliases diff lookup_in_todo_dom todo_dom []
       | Ko (loc_msg) -> [],[],[aliases,diff,loc_msg,true]
   in
     let res =
@@ -654,7 +654,7 @@ in refine_profiler.HExtlib.profile foo ()
          debug_print (lazy "SINGLE INTERPRETATION");
          [diff,metasenv,subst,t,ugraph], false
      | l,_,_ ->
-         debug_print 
+         debug_print
            (lazy (sprintf "MANY INTERPRETATIONS (%d)" (List.length l)));
          let choices =
            List.map
@@ -668,9 +668,9 @@ in refine_profiler.HExtlib.profile foo ()
                  thing_dom)
              l
          in
-         let choosed = 
-           interactive_interpretation_choice 
-             thing_txt thing_txt_prefix_len choices 
+         let choosed =
+           interactive_interpretation_choice
+             thing_txt thing_txt_prefix_len choices
          in
          (List.map (fun n->let _,d,m,s,t,u= List.nth l n in d,m,s,t,u)
            choosed),

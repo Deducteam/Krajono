@@ -6,8 +6,7 @@ module D = Dedukti
 module F = Format
 
 let pp ?(ctx= []) fmt term =
-  Format.fprintf fmt "%s@." (new P.status#ppterm ctx [] [] term)
-
+  Format.fprintf fmt "%s@." (new P.status#ppterm ~context:ctx ~metasenv:[] ~subst:[] term)
 
 (**** Utilities ****)
 
@@ -139,7 +138,7 @@ let fresh_univ name =
   (modname', constname')
 
 
-let translate_univ_uri (baseuri, name) =
+let translate_univ_uri (_, name) =
   try Hashtbl.find universe_table name with Not_found ->
     let const' = fresh_univ name in
     let () = Hashtbl.add constraints_table const' [] in
@@ -174,21 +173,21 @@ let fresh_var context name =
 let theory_modname = "cic"
 
 let theory_const c args = D.apps (D.Const (theory_modname, c)) args
-
+(*
 let nat_type = theory_const "Nat" []
-
+               *)
 let zero_nat = theory_const "z" []
 
 let succ_nat i = theory_const "s" [i]
-
+(*
 let max_nat i j = theory_const "m" [i; j]
-
+ *)
 let sort_type = theory_const "Sort" []
 
 let prop_sort = theory_const "prop" []
 
 let type_sort i = theory_const "type" [i]
-
+(*
 let succ_sort s = theory_const "succ" [s]
 
 let next_sort s = theory_const "next" [s]
@@ -196,16 +195,14 @@ let next_sort s = theory_const "next" [s]
 let rule_sort s1 s2 = theory_const "rule" [s1; s2]
 
 let max_sort s1 s2 = theory_const "max" [s1; s2]
-
+ *)
 let univ_type s = theory_const "Univ" [s]
 
 let term_type s a = theory_const "Term" [s; a]
 
 let univ_term s = theory_const "univ" [s]
 
-let join_term s1 s2 a b = theory_const "join" [s1; s2; a; b]
-
-let cast_term s1 s2 a = theory_const "lift" [s1; s2; a]
+let lift_term s1 s2 a = theory_const "lift" [s1; s2; a]
 
 let prod_term s1 s2 a b = theory_const "prod" [s1; s2; a; b]
 
@@ -243,7 +240,7 @@ let term_of_univ u =
 
 
 let back_to_sort s =
-  let rec to_algebra i =
+  let to_algebra i =
     [(`Type, U.uri_of_string (Format.sprintf "cic:/matita/pts/Type%d.univ" i))]
   in
   match s with Prop -> C.Prop | Type i -> C.Type (to_algebra i)
@@ -640,7 +637,7 @@ module Translation (I : INFO) = struct
       | C.Sort C.Prop -> translate_term context term
       | C.Sort s ->
         let s' = translate_sort s in
-        let term' = translate_term context term in cast_term s' s' term'
+        let term' = translate_term context term in lift_term s' s' term'
       | _ -> translate_term context term
     else
       translate_cast context term ty
@@ -669,7 +666,7 @@ module Translation (I : INFO) = struct
       let s1' = translate_sort s1 in
       let s2' = translate_sort s2 in
       let term' = translate_term context term in
-      cast_term s1' s2' term'
+      lift_term s1' s2' term'
     | _ -> assert false
 
   (** Translate the arguments of an application according to the type

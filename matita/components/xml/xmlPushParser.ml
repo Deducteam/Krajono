@@ -1,14 +1,14 @@
 (* Copyright (C) 2004-2005, HELM Team.
- * 
+ *
  * This file is part of HELM, an Hypertextual, Electronic
  * Library of Mathematics, developed at the Computer Science
  * Department, University of Bologna, Italy.
- * 
+ *
  * HELM is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License
  * as published by the Free Software Foundation; either version 2
  * of the License, or (at your option) any later version.
- * 
+ *
  * HELM is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
@@ -18,7 +18,7 @@
  * along with HELM; if not, write to the Free Software
  * Foundation, Inc., 59 Temple Place - Suite 330, Boston,
  * MA  02111-1307, USA.
- * 
+ *
  * For details, see the HELM World-Wide-Web page,
  * http://helm.cs.unibo.it/
  *)
@@ -94,7 +94,7 @@ let parse expat_parser =
         aux (`Channel ic);
         close_in ic
     | `Gzip_channel ic ->
-        let buf = String.create gzip_bufsize in
+        let buf = Bytes.create gzip_bufsize in
         (try
           while true do
             let bytes = Gzip.input ic buf 0 gzip_bufsize in
@@ -115,4 +115,3 @@ let parse expat_parser xml_source =
     parse expat_parser xml_source
   with Expat.Expat_error xml_error ->
     raise (Parse_error (Expat.xml_error_to_string xml_error))
-

@@ -115,7 +115,7 @@ let pp_fields status r fields =
 (*s Pretty-printing of types. [par] is a boolean indicating whether parentheses
     are needed or not. *)
 
-let rec pp_type status par vl t =
+let pp_type status par vl t =
   let rec pp_rec status par = function
     | Tmeta _ | Tvar' _ | Taxiom -> assert false
     | Tvar i -> (try status,pp_tvar (List.nth vl (pred i))
@@ -202,11 +202,11 @@ let rec pp_expr status par env args =
           let status,res = pp_global status Term r in
            status,apply res)
 (*CSC:    | MLcons _ as c when is_native_char c -> assert (args=[]); pp_native_char c*)
-    | MLcons ({c_kind = Coinductive},r,[]) ->
+    | MLcons ({c_kind = Coinductive; _},r,[]) ->
 	assert (args=[]);
         let status,res = pp_global status Cons r in
 	status,pp_par par (str "lazy " ++ res)
-    | MLcons ({c_kind = Coinductive},r,args') ->
+    | MLcons ({c_kind = Coinductive; _},r,args') ->
 	assert (args=[]);
 	let status,tuple =
          pp_tuple status (fun status -> pp_expr status true env []) args' in
@@ -216,7 +216,7 @@ let rec pp_expr status par env args =
     | MLcons (_,r,[]) ->
 	assert (args=[]);
 	pp_global status Cons r
-    | MLcons ({c_kind = Record fields}, r, args') ->
+    | MLcons ({c_kind = Record fields; _}, r, args') ->
 	assert (args=[]);
         let status,res = pp_fields status r fields in
         let status,res2 =
@@ -649,5 +649,4 @@ let pp_spec status = function
       status, hov 2 (str "type " ++ ids ++ name ++ spc () ++ def)
 
 let pp_decl status d =
- try pp_decl status d with Failure "empty phrase" -> status, mt ()
-;;
+ try pp_decl status d with Failure _ -> status, mt ()

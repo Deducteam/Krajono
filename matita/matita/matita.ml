@@ -1,14 +1,14 @@
 (* Copyright (C) 2004-2005, HELM Team.
- * 
+ *
  * This file is part of HELM, an Hypertextual, Electronic
  * Library of Mathematics, developed at the Computer Science
  * Department, University of Bologna, Italy.
- * 
+ *
  * HELM is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License
  * as published by the Free Software Foundation; either version 2
  * of the License, or (at your option) any later version.
- * 
+ *
  * HELM is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
@@ -18,7 +18,7 @@
  * along with HELM; if not, write to the Free Software
  * Foundation, Inc., 59 Temple Place - Suite 330, Boston,
  * MA  02111-1307, USA.
- * 
+ *
  * For details, see the HELM World-Wide-Web page,
  * http://helm.cs.unibo.it/
  *)
@@ -32,7 +32,7 @@ open GrafiteTypes
 
 (** {2 Initialization} *)
 
-let _ = 
+let _ =
   MatitaInit.add_cmdline_spec
     ["-tptppath", Arg.String
       (fun s -> Helm_registry.set_string "matita.tptppath" s),
@@ -60,24 +60,24 @@ let _ =
   Predefined_virtuals.load_predefined_virtuals ();
   Predefined_virtuals.load_predefined_classes ()
 ;;
-  
+
   (** {{{ Debugging *)
 let init_debugging_menu gui =
   if BuildTimeConf.debug ||
-     Helm_registry.get_bool "matita.debug_menu" 
+     Helm_registry.get_bool "matita.debug_menu"
   then begin
     gui#main#debugMenu#misc#show ();
     let addDebugItem label callback =
       let item =
         GMenu.menu_item ~packing:gui#main#debugMenu_menu#append ~label () in
-      ignore (item#connect#activate callback) 
+      ignore (item#connect#activate callback)
     in
     let addDebugCheckbox label ?(init=false) callback =
       let item =
-        GMenu.check_menu_item 
+        GMenu.check_menu_item
           ~packing:gui#main#debugMenu_menu#append ~label () in
       item#set_active init;
-      ignore (item#connect#toggled (callback item)) 
+      ignore (item#connect#toggled (callback item))
     in
     let addDebugSeparator () =
       ignore (GMenu.separator_item ~packing:gui#main#debugMenu_menu#append ())
@@ -85,10 +85,10 @@ let init_debugging_menu gui =
     addDebugItem "dump aliases" (fun _ ->
       let status = (MatitaScript.current ())#status in
       GrafiteDisambiguate.dump_aliases prerr_endline "" status);
-(* FG: DEBUGGING   
+(* FG: DEBUGGING
     addDebugItem "dump interpretations" (fun _ ->
       let status = script#lexicon_status in
-      let filter = 
+      let filter =
        List.filter (function LexiconAst.Interpretation _ -> true | _ -> false)
       in
       HLog.debug (String.concat "\n"
@@ -107,7 +107,7 @@ let init_debugging_menu gui =
     addDebugCheckbox "multiple disambiguation passes" ~init:true
       (fun mi () -> MultiPassDisambiguator.only_one_pass := mi#active);
     addDebugSeparator ();
-    addDebugCheckbox "tactics logging" 
+    addDebugCheckbox "tactics logging"
       (fun mi () -> NTacStatus.debug := mi#active);
     addDebugCheckbox "disambiguation logging"
       (fun mi () -> MultiPassDisambiguator.debug := mi#active; NCicDisambiguate.debug := mi#active);
@@ -121,10 +121,10 @@ let init_debugging_menu gui =
     (fun _ -> (MatitaScript.current ())#expandAllVirtuals);
     addDebugSeparator ();
     addDebugItem "Elpi trace ..."
-      (fun _ -> 
+      (fun _ ->
         let d = GWindow.dialog ~modal:true ~decorated:true ~width:600 ~height:400 ~title:"Elpi trace options" () in
         let e = GEdit.entry ~packing:d#vbox#add ~text:(String.concat " " !NCicELPI.trace_options) () in
-        let b = GMisc.label ~selectable:true ~packing:d#vbox#add ~text:"ESC-ESC to set\nEmpty to disable tracing\nExample: -trace-on -trace-at run 1 10 -trace-only \\(run\\|select\\)" () in
+        let _ = GMisc.label ~selectable:true ~packing:d#vbox#add ~text:"ESC-ESC to set\nEmpty to disable tracing\nExample: -trace-on -trace-at run 1 10 -trace-only \\(run\\|select\\)" () in
         ignore(d#run ());
         NCicELPI.trace_options := Str.split (Str.regexp " ") e#text;
         );

@@ -1,12 +1,12 @@
 (*
-    ||M||  This file is part of HELM, an Hypertextual, Electronic        
-    ||A||  Library of Mathematics, developed at the Computer Science     
-    ||T||  Department, University of Bologna, Italy.                     
-    ||I||                                                                
-    ||T||  HELM is free software; you can redistribute it and/or         
-    ||A||  modify it under the terms of the GNU General Public License   
-    \   /  version 2 or (at your option) any later version.      
-     \ /   This software is distributed as is, NO WARRANTY.     
+    ||M||  This file is part of HELM, an Hypertextual, Electronic
+    ||A||  Library of Mathematics, developed at the Computer Science
+    ||T||  Department, University of Bologna, Italy.
+    ||I||
+    ||T||  HELM is free software; you can redistribute it and/or
+    ||A||  modify it under the terms of the GNU General Public License
+    \   /  version 2 or (at your option) any later version.
+     \ /   This software is distributed as is, NO WARRANTY.
       V_______________________________________________________________ *)
 
 (* $Id: orderings.ml 12050 2012-05-17 11:26:24Z sacerdot $ *)
@@ -14,15 +14,15 @@
 type aux_comparison = XEQ | XLE | XGE | XLT | XGT | XINCOMPARABLE | XINVERTIBLE
 
 module type Blob =
-  sig 
-    include Terms.Blob 
+  sig
+    include Terms.Blob
 
     (* This order relation should be:
      * - stable for instantiation
      * - total on ground terms
      *
      *)
-    val compare_terms : 
+    val compare_terms :
           t Terms.foterm -> t Terms.foterm -> Terms.comparison
 
     val compute_unit_clause_weight : 't Terms.unit_clause -> int
@@ -32,19 +32,19 @@ module type Blob =
     val name : string
 
   end
-  
+
 type weight = int * (int * int) list;;
-  
+
 let rec eq_foterm f x y =
     x == y ||
     match x, y with
     | Terms.Leaf t1, Terms.Leaf t2 -> f t1 t2
     | Terms.Var i, Terms.Var j -> i = j
-    | Terms.Node l1, Terms.Node l2 when List.length l1 = List.length l2 -> 
+    | Terms.Node l1, Terms.Node l2 when List.length l1 = List.length l2 ->
         List.for_all2 (eq_foterm f) l1 l2
     | _ -> false
 ;;
-  
+
 let string_of_weight (cw, mw) =
   let s =
     String.concat ", "
@@ -52,11 +52,11 @@ let string_of_weight (cw, mw) =
   in
   Printf.sprintf "[%d; %s]" cw s
 ;;
-  
+
 let weight_of_term term =
     let vars_dict = Hashtbl.create 5 in
     let rec aux = function
-      | Terms.Var i -> 
+      | Terms.Var i ->
           (try
              let oldw = Hashtbl.find vars_dict i in
              Hashtbl.replace vars_dict i (oldw+1)
@@ -68,56 +68,56 @@ let weight_of_term term =
     in
     let w = aux term in
     let l =
-      Hashtbl.fold (fun meta metaw resw -> (meta, metaw)::resw) vars_dict [] 
+      Hashtbl.fold (fun meta metaw resw -> (meta, metaw)::resw) vars_dict []
     in
-    let compare w1 w2 = 
+    let compare w1 w2 =
       match w1, w2 with
       | (m1, _), (m2, _) -> m1 - m2
-    in 
+    in
     (w, List.sort compare l) (* from the smallest meta to the bigest *)
 ;;
-  
-let compute_unit_clause_weight (_,l, _, _) = 
+
+let compute_unit_clause_weight (_,l, _, _) =
     let weight_of_polynomial w m =
-      let factor = 2 in      
+      let factor = 2 in
       w + factor * List.fold_left (fun acc (_,occ) -> acc+occ) 0 m
     in
     match l with
-    | Terms.Predicate t -> 
-        let w, m = weight_of_term t in 
+    | Terms.Predicate t ->
+        let w, m = weight_of_term t in
         weight_of_polynomial w m
-    | Terms.Equation (_,x,_,Terms.Lt) 
+    | Terms.Equation (_,x,_,Terms.Lt)
     | Terms.Equation (x,_,_,Terms.Gt) ->
-        let w, m = weight_of_term x in 
+        let w, m = weight_of_term x in
         weight_of_polynomial w m
-    | Terms.Equation (l,r,_,Terms.Eq) 
-    | Terms.Equation (l,r,_,Terms.Incomparable) 
+    | Terms.Equation (l,r,_,Terms.Eq)
+    | Terms.Equation (l,r,_,Terms.Incomparable)
     | Terms.Equation (l,r,_,Terms.Invertible) ->
-        let wl, ml = weight_of_term l in 
-        let wr, mr = weight_of_term r in 
+        let wl, ml = weight_of_term l in
+        let wr, mr = weight_of_term r in
         weight_of_polynomial (wl+wr) (ml@mr)
 ;;
 
 (* UNUSED for now *)
-let compute_goal_weight (_,l, _, _) = 
+let compute_goal_weight (_,l, _, _) =
     let weight_of_polynomial w m =
-      let factor = 2 in      
+      let factor = 2 in
       w + factor * List.fold_left (fun acc (_,occ) -> acc+occ) 0 m
     in
     match l with
-    | Terms.Predicate t -> 
-        let w, m = weight_of_term t in 
+    | Terms.Predicate t ->
+        let w, m = weight_of_term t in
         weight_of_polynomial w m
     | Terms.Equation (l,r,_,_) ->
-        let wl, ml = weight_of_term l in 
-        let wr, mr = weight_of_term r in 
+        let wl, ml = weight_of_term l in
+        let wr, mr = weight_of_term r in
         let wl = weight_of_polynomial wl ml in
         let wr = weight_of_polynomial wr mr in
           - (abs (wl-wr))
   ;;
 
 let compute_goal_weight = compute_unit_clause_weight;;
-  
+
 (* Riazanov: 3.1.5 pag 38 *)
 (* Compare weights normalized in a new way :
  * Variables should be sorted from the lowest index to the highest
@@ -131,13 +131,13 @@ let compare_weights (h1, w1) (h2, w2) =
           if var1 = var2 then
             let diffs = (w1 - w2) + diffs in
             let r = Pervasives.compare w1 w2 in
-            let lt = lt or (r < 0) in
-            let gt = gt or (r > 0) in
+            let lt = lt || (r < 0) in
+            let gt = gt || (r > 0) in
               if lt && gt then XINCOMPARABLE else
                 aux hdiff (lt, gt) diffs tl1 tl2
           else if var1 < var2 then
             if lt then XINCOMPARABLE else
-              aux hdiff (false,true) (diffs+w1) tl1 l2        
+              aux hdiff (false,true) (diffs+w1) tl1 l2
           else
             if gt then XINCOMPARABLE else
               aux hdiff (true,false) (diffs-w2) l1 tl2
@@ -162,7 +162,7 @@ let compare_weights (h1, w1) (h2, w2) =
     aux (h1-h2) (false,false) 0 w1 w2
 ;;
 
-(* Riazanov: p. 40, relation >>> 
+(* Riazanov: p. 40, relation >>>
  * if head_only=true then it is not >>> but helps case 2 of 3.14 p 39 *)
 let rec aux_ordering b_compare ?(head_only=false) t1 t2 =
   match t1, t2 with
@@ -175,7 +175,7 @@ let rec aux_ordering b_compare ?(head_only=false) t1 t2 =
   | Terms.Var _, _
   | _, Terms.Var _ -> XINCOMPARABLE
   (* 2.a *)
-  | Terms.Leaf a1, Terms.Leaf a2 -> 
+  | Terms.Leaf a1, Terms.Leaf a2 ->
       let cmp = b_compare a1 a2 in
       if cmp = 0 then XEQ else if cmp < 0 then XLT else XGT
   | Terms.Leaf _, Terms.Node _ -> XLT
@@ -193,8 +193,8 @@ let rec aux_ordering b_compare ?(head_only=false) t1 t2 =
       in
       cmp l1 l2
 ;;
-  
-let compare_terms o x y = 
+
+let compare_terms o x y =
     match o x y with
       | XINCOMPARABLE -> Terms.Incomparable
       | XGT -> Terms.Gt
@@ -206,7 +206,7 @@ let compare_terms o x y =
 
 module NRKBO (B : Terms.Blob) = struct
   let name = "nrkbo"
-  include B 
+  include B
 
   module Pp = Pp.Pp(B)
 
@@ -220,7 +220,7 @@ exception UnificationFailure of string Lazy.t;;
     let rec equiv subst s t =
       let s = match s with Terms.Var i -> FoSubst.lookup i subst | _ -> s
       and t = match t with Terms.Var i -> FoSubst.lookup i subst | _ -> t
-        
+
       in
       match s, t with
         | s, t when eq_foterm s t -> subst
@@ -244,7 +244,7 @@ exception UnificationFailure of string Lazy.t;;
 
 let relocate maxvar varlist subst =
     List.fold_right
-      (fun i (maxvar, varlist, s) -> 
+      (fun i (maxvar, varlist, s) ->
          maxvar+1, maxvar::varlist, FoSubst.build_subst i (Terms.Var maxvar) s)
       varlist (maxvar+1, [], subst)
   ;;
@@ -261,7 +261,7 @@ let relocate maxvar varlist subst =
 
   let compute_unit_clause_weight = compute_unit_clause_weight;;
   let compute_goal_weight = compute_goal_weight;;
-  
+
   (* Riazanov: p. 40, relation >_n *)
   let nonrec_kbo t1 t2 =
     let w1 = weight_of_term t1 in
@@ -269,7 +269,7 @@ let relocate maxvar varlist subst =
     match compare_weights w1 w2 with
     | XLE ->  (* this is .> *)
         if aux_ordering B.compare t1 t2 = XLT then XLT else XINCOMPARABLE
-    | XGE -> 
+    | XGE ->
         if aux_ordering B.compare t1 t2 = XGT then XGT else XINCOMPARABLE
     | XEQ -> let res = aux_ordering B.compare t1 t2 in
 	if res = XINCOMPARABLE && are_invertible t1 t2 then XINVERTIBLE
@@ -285,10 +285,10 @@ let relocate maxvar varlist subst =
   ;;
 
 end
-  
+
 module KBO (B : Terms.Blob) = struct
   let name = "kbo"
-  include B 
+  include B
 
   module Pp = Pp.Pp(B)
 
@@ -339,7 +339,7 @@ module KBO (B : Terms.Blob) = struct
 	  | Terms.Var i, Terms.Var j when i=j -> XEQ
           | Terms.Node (_::tl1), Terms.Node (_::tl2) -> cmp tl1 tl2
           | _, _ ->  XINCOMPARABLE
-        ) else r 
+        ) else r
     | res -> res
   ;;
 
@@ -354,7 +354,7 @@ end
 
 module LPO (B : Terms.Blob) = struct
   let name = "lpo"
-  include B 
+  include B
 
   module Pp = Pp.Pp(B)
 
@@ -366,9 +366,9 @@ module LPO (B : Terms.Blob) = struct
   (*CSC: beware! Imperative cache! *)
   let cache = Hashtbl.create 101
 
-  let rec lpo_le s t = 
-    eq_foterm s t || lpo_lt s t 
-  
+  let rec lpo_le s t =
+    eq_foterm s t || lpo_lt s t
+
   and lpo_lt s t =
     try Hashtbl.find cache (s,t)
     with
@@ -379,7 +379,7 @@ module LPO (B : Terms.Blob) = struct
           if (List.mem i (Terms.vars_of_term t)) then true
           else false
       | Terms.Leaf a, Terms.Leaf b -> B.compare a b < 0
-      | Terms.Leaf _, Terms.Node _  -> true (* we assume unary constants 
+      | Terms.Leaf _, Terms.Node _  -> true (* we assume unary constants
                             are smaller than constants with higher arity *)
       | Terms.Node _, Terms.Leaf _ -> false
       | Terms.Node [],_
@@ -387,21 +387,21 @@ module LPO (B : Terms.Blob) = struct
       | Terms.Node (hd1::tl1), Terms.Node (hd2::tl2) ->
           if List.exists (lpo_le s) tl2 then true
           else
-          begin 
+          begin
             match aux_ordering B.compare hd1 hd2 with
-            | XINCOMPARABLE 
+            | XINCOMPARABLE
             | XGT -> false
             | XLT -> List.for_all (fun x -> lpo_lt x t) tl1
-            | XEQ -> 
+            | XEQ ->
                 let rec compare_args l1 l2 =
                 match l1,l2 with
-                | [],_ 
+                | [],_
                 | _,[] -> false
-                | a1::tl1,a2::tl2 -> 
+                | a1::tl1,a2::tl2 ->
                     if eq_foterm a1 a2 then compare_args tl1 tl2
                     else if lpo_lt a1 a2 then List.for_all (fun x -> lpo_lt x t) tl1
                     else false
-                in 
+                in
                 compare_args tl1 tl2
             | _ -> assert false
            end
@@ -418,7 +418,7 @@ module LPO (B : Terms.Blob) = struct
     in
      Hashtbl.clear cache; res
   ;;
-    
+
 
   let compare_terms = compare_terms lpo;;
 
@@ -428,4 +428,3 @@ module LPO (B : Terms.Blob) = struct
   ;;
 
 end
-

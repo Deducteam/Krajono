@@ -10,9 +10,9 @@
 
 (*s Extraction from Coq terms to Miniml. *)
 
-open Coq
+(* open Coq *)
 open Miniml
-open OcamlExtractionTable
+(* open OcamlExtractionTable *)
 
 val extract:
  #OcamlExtractionTable.status as 'status -> NCic.obj ->

@@ -1,14 +1,14 @@
 (* Copyright (C) 2004-2005, HELM Team.
- * 
+ *
  * This file is part of HELM, an Hypertextual, Electronic
  * Library of Mathematics, developed at the Computer Science
  * Department, University of Bologna, Italy.
- * 
+ *
  * HELM is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License
  * as published by the Free Software Foundation; either version 2
  * of the License, or (at your option) any later version.
- * 
+ *
  * HELM is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
@@ -18,7 +18,7 @@
  * along with HELM; if not, write to the Free Software
  * Foundation, Inc., 59 Temple Place - Suite 330, Boston,
  * MA  02111-1307, USA.
- * 
+ *
  * For details, see the HELM World-Wide-Web page,
  * http://helm.cs.unibo.it/
  *)
@@ -30,14 +30,14 @@ open Printf
 (** Functions "imported" from Http_getter_misc *)
 
 let normalize_dir = Http_getter_misc.normalize_dir
-let strip_suffix ~suffix s = 
-  try 
+let strip_suffix ~suffix s =
+  try
     Http_getter_misc.strip_suffix ~suffix s
   with Invalid_argument _ -> s
 
 let absolute_path file =
   if file.[0] = '/' then file else Unix.getcwd () ^ "/" ^ file
-  
+
 let is_proof_script fname = true  (** TODO Zack *)
 let is_proof_object fname = true  (** TODO Zack *)
 
@@ -67,21 +67,21 @@ class basic_history (head, tail, cur) =
     val mutable hd = head  (* insertion point *)
     val mutable tl = tail (* oldest inserted item *)
     val mutable cur = cur  (* current item for the history *)
-    
+
     method is_begin = cur <= tl
     method is_end = cur >= hd
   end
-  
-  
+
+
 class shell_history size =
   let size = size + 1 in
   let decr x = let x' = x - 1 in if x' < 0 then size + x' else x' in
   let incr x = (x + 1) mod size in
   object (self)
-    val data = Array.create size ""
+    val data = Array.make size ""
 
     inherit basic_history (0, -1 , -1)
-    
+
     method add s =
       data.(hd) <- s;
       if tl = -1 then tl <- hd;
@@ -106,10 +106,10 @@ class shell_history size =
 class ['a] browser_history ~memento size init =
   object (self)
     initializer match memento with Some m -> self#load m | _ -> ()
-    val data = Array.create size init
+    val data = Array.make size init
 
     inherit basic_history (0, 0, 0)
-    
+
     method previous =
       if cur = tl then raise History_failure;
       cur <- cur - 1;
@@ -154,19 +154,19 @@ let list_tl_at ?(equality=(==)) e l =
   in
   aux l
 
-let shutup () = 
+let shutup () =
   HLog.set_log_callback (fun _ _ -> ())
 (*
   let out = open_out "/dev/null" in
   Unix.dup2 (Unix.descr_of_out_channel out) (Unix.descr_of_out_channel stderr)
 *)
-              
+
 (* FG: out_preamble *********************************************************)
 
 let out_comment och s =
    let s = if s <> "" && s.[0] = '*' then "#" ^ s else s in
-   Printf.fprintf och "%s%s%s\n\n" "(*" s "*)" 
- 
+   Printf.fprintf och "%s%s%s\n\n" "(*" s "*)"
+
 let out_line_comment och s =
    let l = 70 - String.length s in
    let s = Printf.sprintf " %s %s" s (String.make l '*') in
@@ -178,10 +178,10 @@ let out_preamble och =
    let lines = 14 in
    let ich = open_in path in
    let rec print i =
-      if i > 0 then 
+      if i > 0 then
          let s = input_line ich in
          begin Printf.fprintf och "%s\n" s; print (pred i) end
-   in 
+   in
    print lines;
    out_line_comment och "This file was automatically generated: do not edit"
 

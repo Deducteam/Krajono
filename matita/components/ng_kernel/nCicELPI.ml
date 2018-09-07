@@ -1,12 +1,12 @@
 (*
-    ||M||  This file is part of HELM, an Hypertextual, Electronic        
-    ||A||  Library of Mathematics, developed at the Computer Science     
-    ||T||  Department, University of Bologna, Italy.                     
-    ||I||                                                                
-    ||T||  HELM is free software; you can redistribute it and/or         
-    ||A||  modify it under the terms of the GNU General Public License   
-    \   /  version 2 or (at your option) any later version.      
-     \ /   This software is distributed as is, NO WARRANTY.     
+    ||M||  This file is part of HELM, an Hypertextual, Electronic
+    ||A||  Library of Mathematics, developed at the Computer Science
+    ||T||  Department, University of Bologna, Italy.
+    ||I||
+    ||T||  HELM is free software; you can redistribute it and/or
+    ||A||  modify it under the terms of the GNU General Public License
+    \   /  version 2 or (at your option) any later version.
+     \ /   This software is distributed as is, NO WARRANTY.
       V_______________________________________________________________ *)
 
 module U   = NUri
@@ -346,8 +346,8 @@ let rec get_gref ~depth = function
 
 let get_gref f ~depth t =
    try f (get_gref ~depth t) with
-      | Failure "nth"
-      | Invalid_argument "List.nth"
+      | Failure _
+      | Invalid_argument _
       | R.IllFormedReference _
       | E.ObjectNotFound _
       | LPX.No_clause           -> fail ()
@@ -413,7 +413,7 @@ let set_kernel e =
    refiner_program := program_ref
 
 (* Note: to be replaced by String.uppercase_ascii *)
-let set_kernel_from_string s = match String.uppercase s with
+let set_kernel_from_string s = match String.uppercase_ascii s with
    | "NO"  -> set_kernel NO
    | "FG0" -> set_kernel (FG 0)
    | "FG1" -> set_kernel (FG 1)

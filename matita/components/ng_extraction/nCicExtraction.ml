@@ -1,14 +1,14 @@
 (* Copyright (C) 2000, HELM Team.
- * 
+ *
  * This file is part of HELM, an Hypertextual, Electronic
  * Library of Mathematics, developed at the Computer Science
  * Department, University of Bologna, Italy.
- * 
+ *
  * HELM is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License
  * as published by the Free Software Foundation; either version 2
  * of the License, or (at your option) any later version.
- * 
+ *
  * HELM is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
@@ -18,7 +18,7 @@
  * along with HELM; if not, write to the Free Software
  * Foundation, Inc., 59 Temple Place - Suite 330, Boston,
  * MA  02111-1307, USA.
- * 
+ *
  * For details, see the HELM World-Wide-Web page,
  * http://cs.unibo.it/helm/.
  *)
@@ -152,8 +152,6 @@ type obj_kind =
    (* reference, left, right, constructors *)
  | Algebraic of (info * Ref.reference * typ_context * typ_context * (Ref.reference * typ) list) list
 
-type obj = info * Ref.reference * obj_kind
-
 (* For LetRec and Algebraic blocks *)
 let dummyref =
  let uri = NUri.uri_of_string "cic:/matita/dummy/indty.ind" in
@@ -262,7 +260,7 @@ let classify status ~metasenv context t =
           | `Kind -> `TypeFormer
           | `PropKind -> `PropFormer)
 ;;
-      
+
 
 let rec kind_of status ~metasenv context k =
  match NCicReduction.whd status ~subst:[] context k with
@@ -662,7 +660,7 @@ let rec term_of status ~metasenv context =
          | TSkip t,_
          | Forall (_,_,t),_
          | Arrow (_, t), _ when n > 0 ->
-            eat_branch (pred n) t context ctx pat 
+            eat_branch (pred n) t context ctx pat
          | _, _ when n > 0 -> assert false (*BUG: is Top possible here?*)
          (*CSC: unify the three cases below? *)
          | Arrow (_, t), NCic.Lambda (name, ty, t') ->
@@ -689,7 +687,7 @@ let rec term_of status ~metasenv context =
          HExtlib.list_mapi
           (fun pat i ->
             let ref = Ref.mk_constructor (i+1) ref in
-            let ty = 
+            let ty =
              (* BUG HERE, QUICK BUG WRONG PATCH IN PLACE *)
              try
               type_of_constructor status ref
@@ -795,7 +793,6 @@ prerr_endline ("fCONTEXT= " ^ String.concat " " xcontext);
 
 type 'a result =
   | Erased
-  | OutsideTheory
   | Failure of string
   | Success of 'a
 ;;
@@ -844,7 +841,7 @@ let object_of_constant status ~metasenv ref bo ty =
                 (fun p1 n ->
                   HExtlib.map_option (fun (_,k) ->
                    (*CSC: BUG here, clashes*)
-                   String.uncapitalize (fst n),k) p1)
+                   String.uncapitalize_ascii (fst n),k) p1)
                 ctx0 ctx
               in
               let bo = typ_of status ~metasenv ctx bo in
@@ -961,16 +958,16 @@ let object_of status (uri,height,metasenv,subst,obj_kind) =
 let (|>) f g =
   fun x -> g (f x)
 ;;
-
+(*
 let curry f x y =
   f (x, y)
 ;;
-
+*)
 let uncurry f (x, y) =
   f x y
 ;;
 
-let rec char_list_of_string s =
+let char_list_of_string s =
   let l = String.length s in
   let rec aux buffer s =
     function
@@ -1013,8 +1010,8 @@ let rec capitalize_marked_positions s =
     | []    -> s
     | x::xs ->
       if x < String.length s then
-        let c = Char.uppercase (String.get s x) in
-        let _ = String.set s x c in
+        let c = Char.uppercase_ascii (String.get s x) in
+        let _ = Bytes.set s x c in
           capitalize_marked_positions s xs
       else
         capitalize_marked_positions s xs
@@ -1028,12 +1025,12 @@ let contract_underscores_and_capitalise =
 
 let idiomatic_haskell_type_name_of_string =
   contract_underscores_and_capitalise |>
-  String.capitalize
+  String.capitalize_ascii
 ;;
 
 let idiomatic_haskell_term_name_of_string =
   contract_underscores_and_capitalise |>
-  String.uncapitalize
+  String.uncapitalize_ascii
 ;;
 
 let classify_reference status ref =
@@ -1223,7 +1220,7 @@ let rec pp_obj status (_,ref,obj_kind) =
       ) il)
  (* inductive and records missing *)
 
-let rec infos_of (info,_,obj_kind) =
+let infos_of (info,_,obj_kind) =
  info @
   match obj_kind with
      LetRec l -> List.concat (List.map (fun (infos,_,_) -> infos) l)
@@ -1235,7 +1232,7 @@ let haskell_of_obj status (uri,_,_,_,_ as obj) =
   status,
    match obj with
       Erased -> "-- [?] " ^ NUri.name_of_uri uri ^ " erased due to term being propositionally irrelevant.\n",[]
-    | OutsideTheory -> "-- [?] " ^ NUri.name_of_uri uri ^ " erased due to image of term under extraction residing outside Fω.\n",[]
+    (*    | OutsideTheory -> "-- [?] " ^ NUri.name_of_uri uri ^ " erased due to image of term under extraction residing outside Fω.\n",[] *)
     | Failure msg -> "-- [?] " ^ NUri.name_of_uri uri ^ " FAILURE: " ^ msg ^ "\n",[]
     | Success o -> pp_obj status o ^ "\n", infos_of o
 

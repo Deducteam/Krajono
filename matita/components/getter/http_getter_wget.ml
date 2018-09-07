@@ -1,14 +1,14 @@
 (* Copyright (C) 2000-2005, HELM Team.
- * 
+ *
  * This file is part of HELM, an Hypertextual, Electronic
  * Library of Mathematics, developed at the Computer Science
  * Department, University of Bologna, Italy.
- * 
+ *
  * HELM is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License
  * as published by the Free Software Foundation; either version 2
  * of the License, or (at your option) any later version.
- * 
+ *
  * HELM is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
@@ -18,7 +18,7 @@
  * along with HELM; if not, write to the Free Software
  * Foundation, Inc., 59 Temple Place - Suite 330, Boston,
  * MA  02111-1307, USA.
- * 
+ *
  * For details, see the HELM World-Wide-Web page,
  * http://cs.unibo.it/helm/.
  *)
@@ -49,7 +49,7 @@ let get_and_save url dest_filename =
 
 let get_and_save_to_tmp url =
   let flat_string s s' c =
-    let cs = String.copy s in
+    let cs = Bytes.of_string s in
     for i = 0 to (String.length s) - 1 do
       if String.contains s' s.[i] then cs.[i] <- c
     done;
@@ -68,6 +68,5 @@ let exists url =
     true
   with
      Http_user_agent.Http_error _ -> false
-   | Not_found -> prerr_endline (Printf.sprintf "An object %s has metadata but no XML. This is an internal bug of ocaml-http: Zack, please fix it!" 
+   | Not_found -> prerr_endline (Printf.sprintf "An object %s has metadata but no XML. This is an internal bug of ocaml-http: Zack, please fix it!"
                   url); assert false
-

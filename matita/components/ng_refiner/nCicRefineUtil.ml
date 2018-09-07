@@ -1,14 +1,14 @@
 (* Copyright (C) 2004, HELM Team.
- * 
+ *
  * This file is part of HELM, an Hypertextual, Electronic
  * Library of Mathematics, developed at the Computer Science
  * Department, University of Bologna, Italy.
- * 
+ *
  * HELM is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License
  * as published by the Free Software Foundation; either version 2
  * of the License, or (at your option) any later version.
- * 
+ *
  * HELM is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
@@ -18,16 +18,16 @@
  * along with HELM; if not, write to the Free Software
  * Foundation, Inc., 59 Temple Place - Suite 330, Boston,
  * MA  02111-1307, USA.
- * 
+ *
  * For details, see the HELM World-Wide-Web page,
  * http://helm.cs.unibo.it/
  *)
 
 (* $Id: cicUtil.ml 10153 2009-07-28 15:17:51Z sacerdot $ *)
-
+(*
 exception Meta_not_found of int
 exception Subst_not_found of int
-
+ *)
 (* syntactic_equality up to the                 *)
 (* distinction between fake dependent products  *)
 (* and non-dependent products, alfa-conversion  *)
@@ -97,7 +97,7 @@ let replace_lifting status ~equality ~context ~what ~with_what ~where =
    with Not_found ->
     match t with
       NCic.Rel _ as t -> t
-    | NCic.Meta (i, (shift,l)) -> 
+    | NCic.Meta (i, (shift,l)) ->
        let l = NCicUtils.expand_local_context l in
        let l' =
         List.map (fun t -> substaux k ctx what (NCicSubstitution.lift status shift t)) l
@@ -139,5 +139,3 @@ let replace_lifting status ~equality ~context ~what ~with_what ~where =
 
   substaux 1 context what where
 ;;
-
-

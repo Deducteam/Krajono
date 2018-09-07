@@ -1,12 +1,12 @@
 (*
-    ||M||  This file is part of HELM, an Hypertextual, Electronic        
-    ||A||  Library of Mathematics, developed at the Computer Science     
-    ||T||  Department, University of Bologna, Italy.                     
-    ||I||                                                                
-    ||T||  HELM is free software; you can redistribute it and/or         
-    ||A||  modify it under the terms of the GNU General Public License   
-    \   /  version 2 or (at your option) any later version.      
-     \ /   This software is distributed as is, NO WARRANTY.     
+    ||M||  This file is part of HELM, an Hypertextual, Electronic
+    ||A||  Library of Mathematics, developed at the Computer Science
+    ||T||  Department, University of Bologna, Italy.
+    ||I||
+    ||T||  HELM is free software; you can redistribute it and/or
+    ||A||  modify it under the terms of the GNU General Public License
+    \   /  version 2 or (at your option) any later version.
+     \ /   This software is distributed as is, NO WARRANTY.
       V_______________________________________________________________ *)
 
 (* $Id: terms.mli 9822 2009-06-03 15:37:06Z tassi $ *)
@@ -23,12 +23,12 @@ let default_eqP() =
 let equivalence_relation =
   let uri = NUri.uri_of_string "cic:/matita/ng/properties/relations/eq_rel.con"
   in
-  let ref = NReference.reference_of_spec uri (NReference.Fix(0,1,2)) 
+  let ref = NReference.reference_of_spec uri (NReference.Fix(0,1,2))
   in NCic.Const ref
 
 let setoid_eq =
   let uri = NUri.uri_of_string "cic:/matita/ng/sets/setoids/eq.con" in
-  let ref = NReference.reference_of_spec uri (NReference.Fix(0,0,2)) 
+  let ref = NReference.reference_of_spec uri (NReference.Fix(0,0,2))
   in NCic.Const ref
 
 let set_default_eqP() = eqPref := default_eqP
@@ -40,7 +40,7 @@ module type NCicContext =
     val context : NCic.context
   end
 
-module NCicBlob(C : NCicContext) : Terms.Blob 
+module NCicBlob(C : NCicContext) : Terms.Blob
 with type t = NCic.term and type input = NCic.term = struct
 
   type t = NCic.term
@@ -56,18 +56,18 @@ with type t = NCic.term and type input = NCic.term = struct
     | _ -> 0
 
 external old_hash_param :
-  int -> int -> 'a -> int = "caml_hash_univ_param" "noalloc";;
+  int -> int -> 'a -> int = "caml_hash_univ_param" "noalloc"
 
 let old_hash = old_hash_param 10 100;;
 
   let compare_refs (NReference.Ref (u1,r1)) (NReference.Ref (u2,r2)) =
     let x = height_of_ref r2 - height_of_ref r1 in
-      if x = 0 then 
-	old_hash (NUri.string_of_uri u1,r1) - 
+      if x = 0 then
+	old_hash (NUri.string_of_uri u1,r1) -
 	  old_hash (NUri.string_of_uri u2,r2)
-      else x 
+      else x
 
-  let rec compare x y = 
+  let rec compare x y =
     match x,y with
     | NCic.Rel i, NCic.Rel j -> j-i
     | NCic.Meta (i,_), NCic.Meta (j,_) -> i-j
@@ -82,10 +82,10 @@ let old_hash = old_hash_param 10 100;;
     | NCic.Meta _, NCic.Appl _ -> 1
     | _ -> Pervasives.compare x y
 	(* was assert false, but why? *)
-	
+
   ;;
-  
-  let compare x y = 
+
+  let compare x y =
     if eq x y then 0
     else compare x y
   ;;
@@ -95,14 +95,14 @@ let old_hash = old_hash_param 10 100;;
 
   let is_eq = function
     | Terms.Node [ Terms.Leaf eqt ; ty; l; r ] when eq eqP eqt ->
-        Some (ty,l,r) 
+        Some (ty,l,r)
 (*
     | Terms.Node [ Terms.Leaf eqt ; _; Terms.Node [Terms.Leaf eqt2 ; ty]; l; r]
 	when eq equivalence_relation eqt && eq setoid_eq eqt2 ->
         Some (ty,l,r) *)
     | _ -> None
 
-  let pp t = 
+  let pp t =
     (* CSC: NCicPp.status is the best I can put here *)
     (new NCicPp.status)#ppterm ~context:C.context
       ~metasenv:C.metasenv ~subst:C.subst t;;
@@ -124,18 +124,18 @@ let old_hash = old_hash_param 10 100;;
 
   let embed t = fst (embed t) ;;
 
-  let saturate t ty = 
-    let sty, _, args = 
+  let saturate t ty =
+    let sty, _, args =
       (* CSC: NCicPp.status is the best I can put here *)
       NCicMetaSubst.saturate (new NCicPp.status) ~delta:0 C.metasenv C.subst
        C.context ty 0
     in
-    let proof = 
-      if args = [] then Terms.Leaf t 
+    let proof =
+      if args = [] then Terms.Leaf t
       else Terms.Node (Terms.Leaf t :: List.map embed args)
     in
     let sty = embed sty in
     proof, sty
   ;;
-  
+
  end

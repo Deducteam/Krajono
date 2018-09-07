@@ -58,3 +58,5 @@ B matita/components/grafite_engine
 B matita/components/disambiguation
 B matita/components/ng_library
 B matita/components/xml
+
+PKG camlp5 camlzip lablgtk ocaml-expat ocaml-http ocaml-migrate-parsetree ocamlnat pcre ppx_deriving.std ppx_tools ppx_tools_versioned

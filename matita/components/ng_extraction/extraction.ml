@@ -31,7 +31,7 @@ let rec split_all_prods status ~subst context te =
    | NCic.Prod (name,so,ta) ->
        split_all_prods status ~subst ((name,(NCic.Decl so))::context) ta
    | _ -> context,te
-;;
+
 
 (* (nb_lam [na1:T1]...[nan:Tan]c) where c is not an abstraction
  * gives n *)
@@ -123,8 +123,6 @@ type info = Logic | Info
 
 type scheme = TypeScheme | Default
 
-type flag = info * scheme
-
 (*s [flag_of_type] transforms a type [t] into a [flag].
   Really important function. *)
 
@@ -207,7 +205,7 @@ let sign_with_implicits _r s =
 
 (* Enriching a exception message *)
 
-let rec handle_exn _r _n _fn_name = function x -> x
+let handle_exn _r _n _fn_name = function x -> x
 (*CSC: only for pretty printing
   | MLexn s ->
       (try Scanf.sscanf s "UNBOUND %d"
@@ -1014,7 +1012,7 @@ and extract_case context mle (ip,c,br) status mlt =
 (* [decomp_lams_eta env c t] finds the number [n] of products in the type [t],
    and decompose the term [c] in [n] lambdas, with eta-expansion if needed. *)
 
-let rec decomp_lams_eta_n n m status context c t =
+let decomp_lams_eta_n n m status context c t =
   let rels = fst (splay_prod_n status context n t) in
   let rels',c = decompose_lam c in
   let d = n - m in
@@ -1253,7 +1251,7 @@ let extract_inductive status uri inductive ind_pragma leftno types =
   let status,packets =
     array_fold_right_i
      (fun i p (status,res) ->
-       let status,types = 
+       let status,types =
         array_fold_right_i
         (fun j x (status,res) ->
           let status,y = f status i j x in
@@ -1300,7 +1298,7 @@ let extract_impl status (uri,height,metasenv,subst,obj_kind) =
        (def_pragma = `Projection) ifl
  in
   status, List.filter (fun decl -> not (logical_decl decl)) decl
-;;
+
 
 let extract_spec status (uri,height,metasenv,subst,obj_kind) =
  assert (metasenv=[]);

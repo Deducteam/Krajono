@@ -15,10 +15,10 @@ module C = NCic
 module Ref = NReference
 module E = NCicEnvironment
 
-exception AssertFailure of string Lazy.t;;
+exception AssertFailure of string Lazy.t
 
-let debug = ref false;;
-let pp m = if !debug then prerr_endline (Lazy.force m) else ();;
+let debug = ref false
+(* let pp m = if !debug then prerr_endline (Lazy.force m) else () *)
 
 module type Strategy = sig
   type stack_term
@@ -246,7 +246,7 @@ let alpha_eq (status:#NCic.status) ~test_lambda_source aux test_eq_only metasenv
           (NCicSubstitution.lift status s1 t1)
           (NCicSubstitution.lift status s2 t2))
         l1 l2
-      with Invalid_argument "List.for_all2" ->
+      with Invalid_argument _ ->
         prerr_endline ("Meta " ^ string_of_int n1 ^
           " occurrs with local contexts of different lenght\n"^
           status#ppterm ~metasenv ~subst ~context t1 ^ " === " ^

@@ -1,14 +1,14 @@
 (* Copyright (C) 2004-2005, HELM Team.
- * 
+ *
  * This file is part of HELM, an Hypertextual, Electronic
  * Library of Mathematics, developed at the Computer Science
  * Department, University of Bologna, Italy.
- * 
+ *
  * HELM is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License
  * as published by the Free Software Foundation; either version 2
  * of the License, or (at your option) any later version.
- * 
+ *
  * HELM is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
@@ -18,7 +18,7 @@
  * along with HELM; if not, write to the Free Software
  * Foundation, Inc., 59 Temple Place - Suite 330, Boston,
  * MA  02111-1307, USA.
- * 
+ *
  * For details, see the HELM World-Wide-Web page,
  * http://helm.cs.unibo.it/
  *)
@@ -145,7 +145,7 @@ let set' ?(replace=false) registry ~key ~value =
 
 let unset registry = Hashtbl.remove registry
 
-let env_var_of_key s = String.uppercase (Str.global_replace dot_rex "_" s)
+let env_var_of_key s = String.uppercase_ascii (Str.global_replace dot_rex "_" s)
 
 let singleton = function
   | [] ->
@@ -220,15 +220,15 @@ let get_list registry unmarshaller key =
 
 (* FG *)
 let get_pair registry fst_unmarshaller snd_unmarshaller =
-  get_typed registry (pair fst_unmarshaller snd_unmarshaller) 
+  get_typed registry (pair fst_unmarshaller snd_unmarshaller)
 
 (* FG *)
 let get_triple registry fst_unmarshaller snd_unmarshaller trd_unmarshaller =
-  get_typed registry (triple fst_unmarshaller snd_unmarshaller trd_unmarshaller) 
+  get_typed registry (triple fst_unmarshaller snd_unmarshaller trd_unmarshaller)
 
 (* FG *)
 let get_quad registry fst_unmarshaller snd_unmarshaller trd_unmarshaller fth_unmarshaller =
-  get_typed registry (quad fst_unmarshaller snd_unmarshaller trd_unmarshaller fth_unmarshaller) 
+  get_typed registry (quad fst_unmarshaller snd_unmarshaller trd_unmarshaller fth_unmarshaller)
 
 let set_list registry marshaller ~key ~value =
   (* since ocaml hash table are crazy... *)
@@ -451,4 +451,3 @@ let set_string = set_typed of_string
 let set_int = set_typed of_int
 let set_float = set_typed of_float
 let set_bool = set_typed of_bool
-
