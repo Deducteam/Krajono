@@ -1,0 +1,29 @@
+opam-version: "1.2"
+name: "Krajono"
+version: "2.0"
+maintainer: "dedukti-dev@inria.fr"
+author: "Ali Assaf"
+homepage: "http://deducteam.gforge.inria.fr/krajono/"
+bug-reports: "https://github.com/Deducteam/matita/issues"
+dev-repo: "https://github.com/Deducteam/matita/tree/krajono"
+build: [make]
+install: [make "install"]
+remove: [make "uninstall"]
+available: [ ocaml-version >= "4.04" & ocaml-version < "4.05" ]
+depends: [
+  "menhir"
+  "camlp5"
+  "camlzip"
+  "lablgtk"
+  "ocaml-expat"
+  "ocaml-http"
+  "ocaml-migrate-parsetree"
+  "ocamlfind"
+  "ocamlnet"
+  "pcre"
+  "ppx_deriving"
+  "ppx_tools"
+  "ppx_tools_versioned" {< "5.2.1"}
+  "ocamlbuild" {build}
+  "ocamlfind" {build}
+]

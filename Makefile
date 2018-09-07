@@ -1,5 +1,3 @@
-#!/bin/bash
-
 all: matita/matita/matita
 
 .PHONY: matita/matita/matita
@@ -11,12 +9,12 @@ matita/Makefile.defs:
 	cd matita && autoconf && ./configure
 
 elpi/findlib/elpi/elpi.cmxa:
-	git submodule update --init
 	$(MAKE) -C elpi
 
 clean: cleandk
 	$(MAKE) -C elpi clean
 	$(MAKE) -C matita clean
+	rm matita/Makefile.defs
 	rm -f time.*
 
 run: matita/matita/matita
