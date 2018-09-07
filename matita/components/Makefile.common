@@ -28,7 +28,7 @@ REQUIRES := $(shell $(OCAMLFIND) -query -format '%(requires)' helm-$(PACKAGE))
 OCAMLC = $(OCAMLFIND) ocamlc$(OCAML_PROF) $(OCAMLDEBUGOPTIONS) $(OCAMLOPTIONS) $(PREPROCOPTIONS)
 #OCAMLOPT_DEBUG_FLAGS = -p
 OCAMLOPT = $(OCAMLFIND) opt $(OCAMLOPTIONS) $(PREPROCOPTIONS) $(OCAMLOPT_DEBUG_FLAGS)
-OCAMLDEP = $(OCAMLFIND) ocamldep -package "camlp5 $(CAMLP5REQUIRES)" $(SYNTAXOPTIONS) $(OCAMLDEPOPTIONS) 
+OCAMLDEP = $(OCAMLFIND) ocamldep -package "camlp5 $(CAMLP5REQUIRES)" $(SYNTAXOPTIONS) $(OCAMLDEPOPTIONS)
 OCAMLLEX = ocamllex
 OCAMLYACC = ocamlyacc
 
@@ -67,9 +67,9 @@ $(ARCHIVE_OPT): $(IMPLEMENTATION_FILES:%.ml=%.cmx) $(LIBRARIES_OPT)
 
 prereq: $(PREREQ)
 all: prereq $(IMPLEMENTATION_FILES:%.ml=%.cmo) $(ARCHIVE)
-	@echo -n 
+	@echo -n
 opt: prereq $(IMPLEMENTATION_FILES:%.ml=%.cmx) $(ARCHIVE_OPT)
-	@echo -n 
+	@echo -n
 test: test.ml $(ARCHIVE)
 	$(OCAMLC) $(ARCHIVE) -linkpkg -o $@ $<
 test.opt: test.ml $(ARCHIVE_OPT)
@@ -77,10 +77,10 @@ test.opt: test.ml $(ARCHIVE_OPT)
 install:
 uninstall:
 
-depend:: $(DEPEND_FILES)
+.depend: $(DEPEND_FILES)
 	$(H)echo "  OCAMLDEP"
 	$(H)$(OCAMLDEP) $(INTERFACE_FILES) $(IMPLEMENTATION_FILES) > .depend
-depend.opt:: $(DEPEND_FILES)
+.depend.opt: $(DEPEND_FILES)
 	$(H)echo "  OCAMLDEP -native"
 	$(H)$(OCAMLDEP) -native \
 		$(INTERFACE_FILES) $(IMPLEMENTATION_FILES) > .depend.opt
@@ -88,7 +88,7 @@ depend.opt:: $(DEPEND_FILES)
 $(PACKAGE).ps: .dep.dot
 	dot -Tps -o $@ $<
 
-# FG: .depend or .depend.opt? 
+# FG: .depend or .depend.opt?
 .dep.dot: .depend
 	ocamldot < .depend > $@
 
@@ -141,15 +141,15 @@ STATS_FILES = \
 .PHONY: all opt backup depend depend.opt install uninstall clean ocamlinit
 
 ifeq ($(MAKECMDGOALS),)
-  include .depend   
+  include .depend
 endif
 
 ifeq ($(MAKECMDGOALS), all)
-  include .depend   
+  include .depend
 endif
 
 ifeq ($(MAKECMDGOALS), opt)
-  include .depend.opt   
+  include .depend.opt
 endif
 
 NULL =

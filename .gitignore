@@ -8,7 +8,7 @@
 
 *.cmt
 *.cmti
-*/.depend.opt
+.depend.opt
 
 export/*.dko
 export/matita_*.dk
@@ -43,3 +43,5 @@ matita/matita/matitaclean
 matita/matita/matitaclean.opt
 
 matita/matita/help/C/version.txt
+
+matita/components/ulex08/pa_ulex.ml
