@@ -663,8 +663,9 @@ module Translation (I : INFO) = struct
       | C.Sort s ->
         let s' = translate_sort s in
         let term' = translate_term context term in lift_term s' s' term'
+      | C.Prod _ when is_sort ty ->
+         translate_cast context term ty
       | _ ->
-         (* TODO: add identity casts when ty is a sort_prod *)
          translate_term context term
     else
       translate_cast context term ty
@@ -676,20 +677,27 @@ module Translation (I : INFO) = struct
       | C.Appl ms -> C.Appl (ms @ [n])
       | _ -> C.Appl [m; n]
     in
-    (* TODO: this piece of code introduces administrative betas that are useless:
-             [term] might be a lambda *)
     match whd context ty with
     | C.Prod (x, a, b) ->
-      let a'' = translate_type context a in
-      let x'  = fresh_var context.dk x in
-      let context_x = {
-        cic = (x, C.Decl a) :: context.cic;
-        dk  = (x', a'') :: context.dk;
-        map = (D.Var x') :: context.map;
-      } in
-      let mx  = (apply (lift 1 term) (C.Rel 1)) in
-      let mx' = translate_cast context_x mx b in
-      D.Lam (x', a'', mx')
+       begin
+         match term with
+         | C.Lambda (x,a,t) ->
+            let a'' = translate_type context a in
+            let x'  = fresh_var context.dk x in
+            let context_x = {
+                cic = (x, C.Decl a) :: context.cic;
+                dk  = (x', a'') :: context.dk;
+                map = (D.Var x') :: context.map;
+              } in
+            (*
+            let mx  = (apply (lift 1 term) (C.Rel 1)) in *)
+            let t' = translate_cast context_x t b in
+            D.Lam (x', a'', t')
+         | _ ->
+            (* Actually, some terms are not eta expanded. This is due to left parameters of inductive types. For example "p : ex A P". The only time we need to add a cast, is in the identity case, so it is not *necessary* for type-checking. *CONJECTURE*: it is not necessary for universes minimization too. *)
+            let term' = translate_term context term in
+            term'
+       end
     | C.Sort s2 ->
       let s1 = sort_of context term in
       let s1' = translate_sort s1 in
@@ -1614,6 +1622,7 @@ module Translation (I : INFO) = struct
        C.Constant(rel, name, Some body', ty', attr)
     | C.Fixpoint(is_recursive, funs, attr) ->
        C.Fixpoint(is_recursive, eta_expand_fixpoints funs, attr)
+    (* Cannot be eta-expanded! Conjecture: it is not necessary for minimization *)
     | C.Inductive(is_inductive, leftno, types, attr) as t -> t
        (* C.Inductive(is_inductive, leftno, eta_expand_inductives types, attr) *)
 
