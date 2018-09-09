@@ -663,7 +663,9 @@ module Translation (I : INFO) = struct
       | C.Sort s ->
         let s' = translate_sort s in
         let term' = translate_term context term in lift_term s' s' term'
-      | _ -> translate_term context term
+      | _ ->
+         (* TODO: add identity casts when ty is a sort_prod *)
+         translate_term context term
     else
       translate_cast context term ty
 
@@ -674,6 +676,8 @@ module Translation (I : INFO) = struct
       | C.Appl ms -> C.Appl (ms @ [n])
       | _ -> C.Appl [m; n]
     in
+    (* TODO: this piece of code introduces administrative betas that are useless:
+             [term] might be a lambda *)
     match whd context ty with
     | C.Prod (x, a, b) ->
       let a'' = translate_type context a in
@@ -1020,7 +1024,7 @@ module Translation (I : INFO) = struct
       let match_type' = D.prods (List.rev common_context.dk) conclusion in
       add_entry (fst match_const') (D.DefDeclaration (snd match_const', match_type'));
       (* Rewrite rules of the match function *)
-      let match_ind' = D.PConst match_const' in
+      let match_ind' = D.PConst match_const' in (*
       let translate_rule i (cons_name, right_cons_params, right_cons_args) =
         let cons_const' = translate_const (I.baseuri, cons_name) in
         let cons' = D.PConst cons_const' in
@@ -1034,18 +1038,18 @@ module Translation (I : INFO) = struct
         in
         let case' = List.nth cases' i in
         let right_term' = D.app_bindings case' right_cons_params' in
-        let mk_rule univ' =
-          let univ = back_to_sort univ' in
-          let puniv = pattern_of_univ univ' in
-          let left_pattern' = D.papps match_ind' [puniv]  in
-          let right_term' = translate_match_const (I.baseuri, ind_name) univ in
-          add_entry (fst match_const') (D.RewriteRule
-                    ([], left_pattern', D.Const right_term'))
-        in
-        List.iter mk_rule all_univs
                   (* add_entry (fst match_const') (D.RewriteRule (context.dk, left_pattern', right_term')) *)
+      in *)
+      let mk_rule univ' =
+        let univ = back_to_sort univ' in
+        let puniv = pattern_of_univ univ' in
+        let left_pattern' = D.papps match_ind' [puniv]  in
+        let right_term' = translate_match_const (I.baseuri, ind_name) univ in
+        add_entry (fst match_const') (D.RewriteRule
+                                        ([], left_pattern', D.Const right_term'))
       in
-      List.iteri translate_rule cons_infos
+      List.iter mk_rule all_univs
+    (*      List.iteri translate_rule cons_infos *)
 
   (** A filter is similar to a match in that it blocks the application of
         a function until a constructor is passed as an argument. It does not
@@ -1252,6 +1256,7 @@ module Translation (I : INFO) = struct
       add_entry (fst filter_const') (D.DefDeclaration (snd filter_const', filter_type'));
       (* Rewrite rules of the match function *)
       let filter_ind' = D.PConst filter_const' in
+      (*
       let translate_rule i (cons_name, cons_params, cons_args) =
         let cons_const' = translate_const (I.baseuri, cons_name) in
         (* Translate return sort *)
@@ -1276,6 +1281,7 @@ module Translation (I : INFO) = struct
           } in
         let return_type' = D.Var return_type_name' in
         (* Translate return *)
+
         let return_term_name' = fresh_var context.dk "return" in
         let quant_var_name' = fresh_var context.dk "z" in
         let quant_var_type' =
@@ -1300,18 +1306,18 @@ module Translation (I : INFO) = struct
         in
         let right_term' =
           D.App (return_term', D.app_bindings (D.Const cons_const') cons_params') in
-        let mk_rule univ' =
-          let univ = back_to_sort univ' in
-          let puniv = pattern_of_univ univ' in
-          let left_pattern' = D.papps filter_ind' [puniv]  in
-          let right_term' = translate_filter_const (I.baseuri, ind_name) univ in
-          add_entry (fst filter_const') (D.RewriteRule
-                    ([], left_pattern', D.Const right_term'))
-        in
-        List.iter mk_rule all_univs
-                  (* add_entry (fst filter_const') (D.RewriteRule (context.dk, left_pattern', right_term')) *)
+        add_entry (fst filter_const') (D.RewriteRule (context.dk, left_pattern', right_term'))
+      in *)
+      let mk_rule univ' =
+        let univ = back_to_sort univ' in
+        let puniv = pattern_of_univ univ' in
+        let left_pattern' = D.papps filter_ind' [puniv]  in
+        let right_term' = translate_filter_const (I.baseuri, ind_name) univ in
+        add_entry (fst filter_const') (D.RewriteRule
+                                         ([], left_pattern', D.Const right_term'))
       in
-      List.iteri translate_rule cons_infos
+      List.iter mk_rule all_univs
+  (* List.iteri translate_rule cons_infos *)
 
   let translate_inductive leftno ((_, name, ty, constructors) as ind) =
     (*      Format.printf "translate inductive: %s@." name; *)
@@ -1378,12 +1384,13 @@ module Translation (I : INFO) = struct
     (*      Format.printf "new name: %s@." (snd fun_const'); *)
     let fun_body' = translate_body_const (I.baseuri, name) in
     let filter_ind' =
-      translate_filter_const (U.baseuri_of_uri ind_uri, U.name_of_uri ind_uri)
+      translate_filter_scheme_const (U.baseuri_of_uri ind_uri, U.name_of_uri ind_uri)
     in
     let context, params' = translate_bindings context params [] in
     let ind_args' = List.map (translate_term context) ind_args in
     let context, rec_param' = translate_binding (context, rec_param) in
     let return_sort = sort_of context return_type in
+    let return_sort' = translate_sort return_sort in
     let return_type' = translate_term context return_type in
     let return_type'' = translate_type context return_type in
     let fun_const_type'' =
@@ -1409,8 +1416,8 @@ module Translation (I : INFO) = struct
       D.papp_bindings (D.PConst fun_const') (params' @ [rec_param'])
     in
     let right_fun_term' =
-      D.apps (D.Const (filter_ind' return_sort))
-        ( ind_args'
+      D.apps (D.Const (filter_ind'))
+        ( [return_sort'] @ ind_args'
         @ [ D.Lam (fst rec_param', snd rec_param', return_type')
           ; D.app_bindings (D.Const fun_body') params'
           ; D.Var (fst rec_param') ] )
@@ -1474,16 +1481,152 @@ module Translation (I : INFO) = struct
            The [i_attr] argument is not needed by the kernel. *)
         if not is_inductive then not_implemented "co-inductive type" ;
         translate_inductives leftno types
+
+  let rec is_sort b =
+    match b with
+    | C.Sort _ -> true
+    | C.Prod (_, _, b) -> false
+    | _ -> false
+
+  and is_prod_sort b =
+    is_sort b ||
+    match b with
+    | C.Prod (_,_,b) -> is_prod_sort b
+    | _ -> false
+
+  let rec eta context t =
+    let apply m n =
+      match m with
+      | C.Appl ms -> C.Appl (ms @ [n])
+      | _ -> C.Appl [m; n]
+    in (*
+    Format.eprintf "ctx(%d):@." (List.length context.cic);
+    List.iter (fun (id,_) -> Format.eprintf "(%s,_)" id) context.cic;
+    Format.eprintf "@.";
+    Format.eprintf "term: %a@." (pp ~ctx:context.cic) t; *)
+    let ty =
+    try
+      whd context (type_of context t)
+    with NCicTypeChecker.TypeCheckerFailure(s) ->
+      Format.eprintf "Eta: %a@." (pp ~ctx:context.cic) t;
+      Format.eprintf "[ERROR]@.";
+      Format.eprintf "%s@." (Lazy.force s);
+      assert false
+    in
+    (*        Format.eprintf "eta %s:%a@." x' DeduktiPrint.print_term a''; *)
+    match ty with
+    | C.Prod (x, a, b) when is_prod_sort ty ->
+       let a' = eta context a in
+       begin
+         match t with
+         | C.Lambda(x,a,t) ->
+            let context_x = {
+                cic = (x, C.Decl a') :: context.cic;
+                dk  =  context.dk;
+                map = context.map;
+              } in
+            if is_sort b then
+              C.Lambda(x,a',t)
+            else
+              C.Lambda(x,a',eta context_x t)
+         | _ ->
+            let mx  = (apply (lift 1 t) (C.Rel 1)) in
+            let context_x = {
+                cic = (x, C.Decl a') :: context.cic;
+                dk  =  context.dk;
+                map = context.map;
+              }
+            in
+            let mx' = eta context_x mx in
+            C.Lambda(x,a',mx')
+       end
+    | _ -> t
+
+  let rec eta_expand_term context = function
+    | C.Rel i as t -> eta context t
+    | C.Meta _
+      | C.Appl []
+      | C.Implicit _ -> assert false
+    | C.Appl (m::ns) ->
+       let l = List.map (eta_expand_term context) (m::ns) in
+       eta context (C.Appl l)
+    | C.Prod (x, a, b) ->
+       let a' = eta_expand_term context a in
+       let context_x = {context with cic = (x, C.Decl a'):: context.cic} in
+       let b' = eta_expand_term context_x b in
+       C.Prod (x,a',b')
+    | C.Lambda(x,a,m) ->
+       let a' = eta_expand_term context a in
+       let context_x = {context with cic = (x, C.Decl a'):: context.cic} in
+       let m' = eta_expand_term context_x m in
+       eta context (C.Lambda(x,a',m'))
+    | C.LetIn(x,a,n,m) ->
+       let a' = eta_expand_term context a in
+       let n' = eta_expand_term context n in
+       let context_x = {context with cic = (x, C.Decl a'):: context.cic} in
+       let m' = eta_expand_term context_x m in
+       C.LetIn(x,a',n',m')
+    | C.Const _ as t -> eta context t
+    | C.Sort s -> C.Sort s
+    | C.Match (reference, return_type, matched, cases)  ->
+(*       Format.eprintf "before@.";
+       Format.eprintf "debug: %a@." (pp ~ctx:context.cic) t; *)
+       let return_type' = eta_expand_term context return_type in
+(*       Format.eprintf "return_type OK@."; *)
+       let matched' = eta_expand_term context matched in
+       (*       Format.eprintf "matched OK@."; *)
+       let cases' = List.map (eta_expand_term context) cases in
+(*       Format.eprintf "after@."; *)
+       C.Match(reference, return_type', matched', cases')
+
+  let eta_expand_declaration ty =
+    eta_expand_term empty_context ty
+
+  let eta_expand_definition te ty =
+    let ty' = eta_expand_term empty_context ty in
+    let te' = eta_expand_term empty_context te in
+    (te',ty')
+
+  let eta_expand_fixpoints funs =
+    let eta_expand_fixpoint (rel,name,recno, ty, body) =
+      let ty' = eta_expand_term empty_context ty in
+      let body' = eta_expand_term empty_context body in
+      (rel,name,recno,ty', body')
+    in
+    List.map (eta_expand_fixpoint) funs
+
+  let eta_expand_inductives inds =
+    let eta_expand_inductive (rel,name,ty,constructors) =
+      let ty' = eta_expand_term empty_context ty in
+      let eta_expand_constructor (rel,name,ty) =
+        let ty' = eta_expand_term empty_context ty in
+        (rel,name,ty')
+      in
+      (rel,name,ty',List.map eta_expand_constructor constructors)
+    in
+    List.map (eta_expand_inductive) inds
+
+  let eta_expand = function
+    | C.Constant(rel, name, None, ty, attr) ->
+       C.Constant(rel,name, None, eta_expand_declaration ty, attr)
+    | C.Constant(rel, name, Some body, ty, attr) ->
+       let body', ty' = eta_expand_definition body ty in
+       C.Constant(rel, name, Some body', ty', attr)
+    | C.Fixpoint(is_recursive, funs, attr) ->
+       C.Fixpoint(is_recursive, eta_expand_fixpoints funs, attr)
+    | C.Inductive(is_inductive, leftno, types, attr) as t -> t
+       (* C.Inductive(is_inductive, leftno, eta_expand_inductives types, attr) *)
+
 end
 
 (** Extraction entry-points **)
-
 let extraction_enabled () =
   let safe_get_bool name default =
     try Helm_registry.get_bool name with Helm_registry.Key_not_found _ ->
       default
   in
   safe_get_bool "extract_dedukti" false
+
 
 
 (** This function is called every time an object is added to the library. **)
@@ -1504,7 +1647,8 @@ let extract_obj status obj =
       let baseuri = U.baseuri_of_uri uri
     end in
     let module T = Translation (I) in
-    T.translate_obj_kind obj_kind ;
+    let obj_kind' = T.eta_expand obj_kind in
+    T.translate_obj_kind obj_kind' ;
     HLog.message
       (Format.sprintf "Dedukti: Done extracting object %s"
          (U.string_of_uri uri)) )

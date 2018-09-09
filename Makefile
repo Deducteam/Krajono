@@ -61,7 +61,7 @@ TARGETS = $(subst .ma,, $(subst matita/matita/lib/,,$(MAS)))
 define make_targets
 $1: ./matita/matita/lib/$1.ma matita/matita/matita export
 	echo ./matita/matita/lib/$1.ma
-	matita/matita/matitac -elpi-quiet -extract_dedukti ./matita/matita/lib/$1.ma | grep .ma
+	matita/matita/matitac -debug -elpi-quiet -extract_dedukti ./matita/matita/lib/$1.ma | grep .ma
 	mv *.dk export/
 
 $1.ma: $1
