@@ -1607,7 +1607,13 @@ module Translation (I : INFO) = struct
     let eta_expand_inductive (rel,name,ty,constructors) =
       let ty' = eta_expand_term empty_context ty in
       let eta_expand_constructor (rel,name,ty) =
-        let ty' = eta_expand_term empty_context ty in
+        let ty' =
+          match ty with
+          | C.Prod(x,tya,tyb) ->
+             let tya' = eta_expand_term empty_context tya in
+             C.Prod(x,tya',tyb)
+          | _ -> ty
+        in
         (rel,name,ty')
       in
       (rel,name,ty',List.map eta_expand_constructor constructors)
@@ -1623,8 +1629,9 @@ module Translation (I : INFO) = struct
     | C.Fixpoint(is_recursive, funs, attr) ->
        C.Fixpoint(is_recursive, eta_expand_fixpoints funs, attr)
     (* Cannot be eta-expanded! Conjecture: it is not necessary for minimization *)
-    | C.Inductive(is_inductive, leftno, types, attr) as t -> t
-       (* C.Inductive(is_inductive, leftno, eta_expand_inductives types, attr) *)
+    | C.Inductive(is_inductive, leftno, types, attr) (* as t *) ->
+       assert (List.length types = 1);
+       C.Inductive(is_inductive, leftno, eta_expand_inductives types, attr)
 
 end
 
