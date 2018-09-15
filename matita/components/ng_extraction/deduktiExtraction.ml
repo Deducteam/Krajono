@@ -1032,7 +1032,7 @@ module Translation (I : INFO) = struct
       let match_type' = D.prods (List.rev common_context.dk) conclusion in
       add_entry (fst match_const') (D.DefDeclaration (snd match_const', match_type'));
       (* Rewrite rules of the match function *)
-      let match_ind' = D.PConst match_const' in (*
+      let match_ind' = D.PConst match_const' in
       let translate_rule i (cons_name, right_cons_params, right_cons_args) =
         let cons_const' = translate_const (I.baseuri, cons_name) in
         let cons' = D.PConst cons_const' in
@@ -1046,8 +1046,8 @@ module Translation (I : INFO) = struct
         in
         let case' = List.nth cases' i in
         let right_term' = D.app_bindings case' right_cons_params' in
-                  (* add_entry (fst match_const') (D.RewriteRule (context.dk, left_pattern', right_term')) *)
-      in *)
+        add_entry (fst match_const') (D.RewriteRule (context.dk, left_pattern', right_term'))
+      in
       let mk_rule univ' =
         let univ = back_to_sort univ' in
         let puniv = pattern_of_univ univ' in
@@ -1056,8 +1056,8 @@ module Translation (I : INFO) = struct
         add_entry (fst match_const') (D.RewriteRule
                                         ([], left_pattern', D.Const right_term'))
       in
-      List.iter mk_rule all_univs
-    (*      List.iteri translate_rule cons_infos *)
+      List.iter mk_rule all_univs;
+      List.iteri translate_rule cons_infos
 
   (** A filter is similar to a match in that it blocks the application of
         a function until a constructor is passed as an argument. It does not
@@ -1264,7 +1264,6 @@ module Translation (I : INFO) = struct
       add_entry (fst filter_const') (D.DefDeclaration (snd filter_const', filter_type'));
       (* Rewrite rules of the match function *)
       let filter_ind' = D.PConst filter_const' in
-      (*
       let translate_rule i (cons_name, cons_params, cons_args) =
         let cons_const' = translate_const (I.baseuri, cons_name) in
         (* Translate return sort *)
@@ -1315,7 +1314,7 @@ module Translation (I : INFO) = struct
         let right_term' =
           D.App (return_term', D.app_bindings (D.Const cons_const') cons_params') in
         add_entry (fst filter_const') (D.RewriteRule (context.dk, left_pattern', right_term'))
-      in *)
+      in
       let mk_rule univ' =
         let univ = back_to_sort univ' in
         let puniv = pattern_of_univ univ' in
@@ -1324,8 +1323,8 @@ module Translation (I : INFO) = struct
         add_entry (fst filter_const') (D.RewriteRule
                                          ([], left_pattern', D.Const right_term'))
       in
-      List.iter mk_rule all_univs
-  (* List.iteri translate_rule cons_infos *)
+      List.iter mk_rule all_univs;
+      List.iteri translate_rule cons_infos
 
   let translate_inductive leftno ((_, name, ty, constructors) as ind) =
     (*      Format.printf "translate inductive: %s@." name; *)
