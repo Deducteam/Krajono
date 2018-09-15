@@ -1,14 +1,14 @@
 (* Copyright (C) 2002, HELM Team.
- * 
+ *
  * This file is part of HELM, an Hypertextual, Electronic
  * Library of Mathematics, developed at the Computer Science
  * Department, University of Bologna, Italy.
- * 
+ *
  * HELM is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License
  * as published by the Free Software Foundation; either version 2
  * of the License, or (at your option) any later version.
- * 
+ *
  * HELM is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
@@ -18,7 +18,7 @@
  * along with HELM; if not, write to the Free Software
  * Foundation, Inc., 59 Temple Place - Suite 330, Boston,
  * MA  02111-1307, USA.
- * 
+ *
  * For details, see the HELM World-Wide-Web page,
  * http://cs.unibo.it/helm/.
  *)
@@ -29,7 +29,7 @@ open NTacStatus
 open Continuationals.Stack
 
 let debug = false
-let pp = 
+let pp =
   if debug then (fun x -> prerr_endline (Lazy.force x)) else (fun _ -> ())
 
 let fresh_name =
@@ -66,8 +66,8 @@ let rec iter f n acc =
 
 let subst_metasenv_and_fix_names status =
   let u,h,metasenv, subst,o = status#obj in
-  let o = 
-    NCicUntrusted.map_obj_kind ~skip_body:true 
+  let o =
+    NCicUntrusted.map_obj_kind ~skip_body:true
      (NCicUntrusted.apply_subst status subst []) o
   in
    status#set_obj(u,h,NCicUntrusted.apply_subst_metasenv status subst metasenv,subst,o)
@@ -92,9 +92,9 @@ let cascade_select_in_ctx status ~subst ctx skip iname =
   in
 
   let indices,_ = List.fold_left
-       (fun (acc,context) item -> 
+       (fun (acc,context) item ->
           match item with
-            | n,(NCic.Decl s | NCic.Def (s,_)) 
+            | n,(NCic.Decl s | NCic.Def (s,_))
                   when (not (List.for_all (fun x -> NCicTypeChecker.does_not_occur status ~subst context (x-1) x s) acc)
                    && not (List.mem n skip)) ->
                 List.iter (fun m -> pp (lazy ("acc has " ^ (string_of_int m)))) acc;
@@ -134,18 +134,18 @@ let nargs it nleft consno =
   let _,_,t_k = List.nth cl consno in
   List.length (arg_list nleft t_k) ;;
 
-let default_pattern = "",0,(None,[],Some NotationPt.UserInput);; 
-let prod_pattern = 
-  "",0,(None,[],Some NotationPt.Binder 
+let default_pattern = "",0,(None,[],Some NotationPt.UserInput);;
+let prod_pattern =
+  "",0,(None,[],Some NotationPt.Binder
     (`Pi, (mk_id "_",Some (NotationPt.Appl
       [ NotationPt.Implicit `JustOne
       ; NotationPt.Implicit `JustOne
       ; NotationPt.UserInput
-      ; NotationPt.Implicit `JustOne ])), 
+      ; NotationPt.Implicit `JustOne ])),
   NotationPt.Implicit `JustOne));;
 
-let prod_pattern_jm = 
-  "",0,(None,[],Some NotationPt.Binder 
+let prod_pattern_jm =
+  "",0,(None,[],Some NotationPt.Binder
     (`Pi, (mk_id "_",Some (NotationPt.Appl
       [ NotationPt.Implicit `JustOne
       ; NotationPt.Implicit `JustOne
@@ -154,29 +154,29 @@ let prod_pattern_jm =
       ; NotationPt.Implicit `JustOne ])),
   NotationPt.Implicit `JustOne));;
 
-let hp_pattern n = 
+let hp_pattern n =
   "",0,(None,[n, NotationPt.Appl
       [ NotationPt.Implicit `JustOne
       ; NotationPt.Implicit `JustOne
       ; NotationPt.UserInput
-      ; NotationPt.Implicit `JustOne ] ], 
+      ; NotationPt.Implicit `JustOne ] ],
   None);;
 
-let hp_pattern_jm n = 
+let hp_pattern_jm n =
   "",0,(None,[n, NotationPt.Appl
       [ NotationPt.Implicit `JustOne
       ; NotationPt.Implicit `JustOne
       ; NotationPt.UserInput
       ; NotationPt.Implicit `JustOne
-      ; NotationPt.Implicit `JustOne ] ], 
+      ; NotationPt.Implicit `JustOne ] ],
   None);;
 
 (* creates the discrimination = injection+contradiction principle *)
 exception ConstructorTooBig of string;;
 
 let mk_discriminator ~use_jmeq ?(force=false) name it leftno status baseuri =
-  let itnargs = 
-    let _,_,arity,_ = it in 
+  let itnargs =
+    let _,_,arity,_ = it in
     List.length (arg_list 0 arity) in
   let _,itname,_,_ = it in
   let params = List.map (fun x -> "a" ^ string_of_int x) (HExtlib.list_seq 1 (itnargs+1)) in
@@ -188,17 +188,17 @@ let mk_discriminator ~use_jmeq ?(force=false) name it leftno status baseuri =
     if use_jmeq then
       mk_appl [mk_id "jmeq";
                NotationPt.Implicit `JustOne; List.nth ts n;
-               NotationPt.Implicit `JustOne; List.nth us n] 
+               NotationPt.Implicit `JustOne; List.nth us n]
     else
     (* eqty = Tn u0 e0...un-1 en-1 *)
-    let eqty = mk_appl 
-                 (List.nth tys n :: iter (fun i acc -> 
+    let eqty = mk_appl
+                 (List.nth tys n :: iter (fun i acc ->
                                            List.nth us i::
-                                           List.nth es i:: acc) 
+                                           List.nth es i:: acc)
                                      (n-1) []) in
 
     (* params = [T0;t0;...;Tn;tn;u0;e0;un-1;en-1] *)
-    let params = iter (fun i acc -> 
+    let params = iter (fun i acc ->
                          List.nth tys i ::
                          List.nth ts i :: acc) n
                      (iter (fun i acc ->
@@ -209,7 +209,7 @@ let mk_discriminator ~use_jmeq ?(force=false) name it leftno status baseuri =
                         List.nth us n]
 
   in
-    
+
   let _,_,_,cl = it in
 
   let kname (*it*) j =
@@ -217,19 +217,19 @@ let mk_discriminator ~use_jmeq ?(force=false) name it leftno status baseuri =
     name
   in
 
-  let branch i j ts us = 
+  let branch i j ts us =
     let nargs = nargs it leftno i in
     let es = List.map (fun x -> mk_id ("e" ^ string_of_int x)) (HExtlib.list_seq 0 nargs) in
-    let tys = List.map 
-                (fun x -> iter 
-                  (fun i acc -> 
+    let tys = List.map
+                (fun x -> iter
+                  (fun i acc ->
                     NotationPt.Binder (`Lambda, (mk_id ("x" ^ string_of_int i), None),
                     NotationPt.Binder (`Lambda, (mk_id ("p" ^ string_of_int i), None),
-                    acc))) (x-1) 
+                    acc))) (x-1)
                  (NotationPt.Implicit (`Tagged ("T" ^ (string_of_int x)))))
                (HExtlib.list_seq 0 nargs) in
-    let tys = tys @ 
-      [iter (fun i acc -> 
+    let tys = tys @
+      [iter (fun i acc ->
         NotationPt.Binder (`Lambda, (mk_id ("x" ^ string_of_int i), None),
         NotationPt.Binder (`Lambda, (mk_id ("p" ^ string_of_int i), None),
         acc))) (nargs-1)
@@ -239,33 +239,33 @@ let mk_discriminator ~use_jmeq ?(force=false) name it leftno status baseuri =
               (HExtlib.list_seq 0 (List.length ts)));
               mk_appl (mk_id (kname j)::us)])]
     in
-    (** NotationPt.Binder (`Lambda, (mk_id "e", 
-      Some (mk_appl 
+    (** NotationPt.Binder (`Lambda, (mk_id "e",
+      Some (mk_appl
         [mk_id "eq";
          NotationPt.Implicit `JustOne;
          mk_appl (mk_id (kname it i)::ts);
          mk_appl (mk_id (kname it j)::us)])),
-    let ts = ts @ [mk_id "e"] in 
+    let ts = ts @ [mk_id "e"] in
     let refl2 = mk_appl
                   [mk_id "refl";
                    NotationPt.Implicit `JustOne;
                    mk_appl (mk_id (kname it j)::us)] in
     let us = us @ [refl2] in *)
     NotationPt.Binder (`Forall, (mk_id "P", Some (NotationPt.Sort (`NType "1") )),
-      if i = j then 
+      if i = j then
        NotationPt.Binder (`Forall, (mk_id "_",
-        Some (iter (fun i acc -> 
+        Some (iter (fun i acc ->
               NotationPt.Binder (`Forall, (List.nth es i, Some (mk_eq tys ts us es i)), acc))
-              (nargs-1) 
-              (** (NotationPt.Binder (`Forall, (mk_id "_", 
+              (nargs-1)
+              (** (NotationPt.Binder (`Forall, (mk_id "_",
                 Some (mk_eq tys ts us es nargs)),*)
                 (mk_id "P"))), mk_id "P")
       else mk_id "P")
   in
 
-  let inner i ts = NotationPt.Case 
+  let inner i ts = NotationPt.Case
               (mk_id "y",None,
-               (*Some (NotationPt.Binder (`Lambda, (mk_id "y",None), 
+               (*Some (NotationPt.Binder (`Lambda, (mk_id "y",None),
                  NotationPt.Binder (`Forall, (mk_id "_", Some
                  (mk_appl [mk_id "eq";NotationPt.Implicit
                  `JustOne;(*NotationPt.Implicit `JustOne*)
@@ -273,15 +273,15 @@ let mk_discriminator ~use_jmeq ?(force=false) name it leftno status baseuri =
                  NotationPt.Implicit `JustOne )))*)
                   None,
                   List.map
-                  (fun j -> 
+                  (fun j ->
                      let nargs_kty = nargs it leftno j in
-                     let us = iter (fun m acc -> mk_id ("u" ^ (string_of_int m))::acc) 
+                     let us = iter (fun m acc -> mk_id ("u" ^ (string_of_int m))::acc)
                                 (nargs_kty - 1) [] in
-                     let nones = 
+                     let nones =
                        iter (fun _ acc -> None::acc) (nargs_kty - 1) [] in
                      NotationPt.Pattern (kname j,
                                             None,
-                                            List.combine us nones), 
+                                            List.combine us nones),
                                 branch i j ts us)
                   (HExtlib.list_seq 0 (List.length cl)))
   in
@@ -289,19 +289,19 @@ let mk_discriminator ~use_jmeq ?(force=false) name it leftno status baseuri =
                 (mk_id "x",None,
                  None ,
                  List.map
-                   (fun i -> 
+                   (fun i ->
                       let nargs_kty = nargs it leftno i in
-                      if (nargs_kty > 5 && not use_jmeq && not force) then raise (ConstructorTooBig (kname i)); 
+                      if (nargs_kty > 5 && not use_jmeq && not force) then raise (ConstructorTooBig (kname i));
                       let ts = iter (fun m acc -> mk_id ("t" ^ (string_of_int m))::acc)
                                  (nargs_kty - 1) [] in
-                     let nones = 
+                     let nones =
                        iter (fun _ acc -> None::acc) (nargs_kty - 1) [] in
                       NotationPt.Pattern (kname i,
                                              None,
                                              List.combine ts nones),
                                 inner i ts)
                    (HExtlib.list_seq 0 (List.length cl))) in
-  let principle = 
+  let principle =
     mk_prods params (NotationPt.Binder (`Forall, (mk_id "x",
                                Some xyty),
                            NotationPt.Binder (`Forall, (mk_id "y", Some xyty),
@@ -311,7 +311,7 @@ let mk_discriminator ~use_jmeq ?(force=false) name it leftno status baseuri =
                                [mk_sym "jmsimeq"; NotationPt.Implicit `JustOne; mk_id "x";
                                                   NotationPt.Implicit `JustOne; mk_id "y"])),
                                                   outer)
-                            else 
+                            else
                               NotationPt.Binder (`Forall, (mk_id "e",
                               Some (mk_appl [mk_sym "eq";NotationPt.Implicit `JustOne; mk_id "x"; mk_id "y"])),
                              outer)))))
@@ -326,7 +326,7 @@ let mk_discriminator ~use_jmeq ?(force=false) name it leftno status baseuri =
     (baseuri ^ name ^ ".def",0,
       NotationPt.Theorem
        (name, principle, Some (NotationPt.Implicit (`Tagged "inv")), attrs))
-  in 
+  in
   let uri,height,nmenv,nsubst,nobj = theorem in
   let ninitial_stack = Continuationals.Stack.of_nmetasenv nmenv in
   let status = status#set_obj theorem in
@@ -350,8 +350,8 @@ let mk_discriminator ~use_jmeq ?(force=false) name it leftno status baseuri =
     ] in
   let dbranches it ~use_jmeq leftno =
     pp (lazy (Printf.sprintf "dbranches %d" leftno));
-    let nbranches = List.length cl in 
-    let branches = iter (fun n acc -> 
+    let nbranches = List.length cl in
+    let branches = iter (fun n acc ->
       let m = nbranches - n - 1 in
       if m = 0 then acc @ (dbranch it ~use_jmeq leftno m)
       else acc @ NTactics.shift_tac :: (dbranch it ~use_jmeq
@@ -361,7 +361,7 @@ let mk_discriminator ~use_jmeq ?(force=false) name it leftno status baseuri =
          NTactics.branch_tac ~force:false:: branches @ [NTactics.merge_tac]
     else branches
   in
-  let print_tac s status = pp s ; status in 
+  let print_tac s status = pp s ; status in
 
   let status =
    NTactics.block_tac (
@@ -395,12 +395,12 @@ let name_of_rel ~context rel =
 let discriminate_tac ~context cur_eq status =
   pp (lazy (Printf.sprintf "discriminate: equation %s" (name_of_rel ~context cur_eq)));
 
-  
+
   let eq_name,(NCic.Decl s | NCic.Def (s,_)) = List.nth context (cur_eq-1) in
   let _,ctx' = HExtlib.split_nth cur_eq context in
   let status, s = NTacStatus.whd status ctx' (mk_cic_term ctx' s) in
   let status, s = term_of_cic_term status s ctx' in
-  let status,it,use_jmeq = 
+  let status,it,use_jmeq =
     let it,use_jmeq = match s with
       | NCic.Appl [_;it;_;_] -> it,false
       | NCic.Appl [_;it;_;_;_] -> it,true
@@ -409,22 +409,22 @@ let discriminate_tac ~context cur_eq status =
     let status, it = whd status ctx' (mk_cic_term ctx' it) in
     let status, it = term_of_cic_term status it ctx' in
     let _uri,indtyno,its = match it with
-      | NCic.Const (NReference.Ref (uri, NReference.Ind (_,indtyno,_)) as r) 
-      | NCic.Appl (NCic.Const 
-          (NReference.Ref (uri, NReference.Ind (_,indtyno,_)) as r)::_) -> 
+      | NCic.Const (NReference.Ref (uri, NReference.Ind (_,indtyno,_)) as r)
+      | NCic.Appl (NCic.Const
+          (NReference.Ref (uri, NReference.Ind (_,indtyno,_)) as r)::_) ->
         uri, indtyno, NCicEnvironment.get_checked_indtys status r
       | _ -> pp (lazy ("discriminate: indty ="  ^ status#ppterm
                   ~metasenv:[] ~subst:[] ~context:[] it)) ; assert false in
     let _,_,its,_,_ = its in
     status,List.nth its indtyno, use_jmeq
   in
-  
-  let itnargs = 
-    let _,_,arity,_ = it in 
+
+  let itnargs =
+    let _,_,arity,_ = it in
     List.length (arg_list 0 arity) in
   let _,itname,_,_ = it in
   let params = List.map (fun x -> "a" ^ string_of_int x) (HExtlib.list_seq 1 (itnargs+1)) in
-  let principle_name = 
+  let principle_name =
     if use_jmeq then itname ^ "_jmdiscr"
     else itname ^ "_discr"
   in
@@ -439,14 +439,14 @@ let discriminate_tac ~context cur_eq status =
 let saturate_skip status context skip =
   HExtlib.list_uniq
     (List.fold_left
-      (fun acc x -> 
+      (fun acc x ->
          let ix = HExtlib.list_index ((=) x) (List.map fst context)
          in match ix with
          | None -> acc
-	 | Some (i,_) -> 
+	 | Some (i,_) ->
             fst (cascade_select_in_ctx status ~subst:(get_subst status) context [] (i+1)) @ acc) skip skip)
 ;;
-      
+
 let subst_tac ~context ~dir skip cur_eq =
   fun status as oldstatus ->
   let eq_name,(NCic.Decl s | NCic.Def (s,_)) = List.nth context (cur_eq-1) in
@@ -464,25 +464,25 @@ let subst_tac ~context ~dir skip cur_eq =
     (* let var = match var with
       | NCic.Rel i -> i
       | _ -> assert false in *)
-    let names_to_gen, _ = 
-      match var with 
+    let names_to_gen, _ =
+      match var with
       | NCic.Rel var ->
         cascade_select_in_ctx status ~subst:(get_subst status) context skip (var+cur_eq)
       | _ -> cascade_select_in_ctx status ~subst:(get_subst status) context skip cur_eq in
     let varname = match var with
-      | NCic.Rel var -> 
+      | NCic.Rel var ->
           let name,_ = List.nth context (var+cur_eq-1) in
 	  HLog.warn (Printf.sprintf "destruct: trying to remove variable: %s" name);
 	  [name]
       | _ -> []
-    in      
+    in
     let names_to_gen = List.filter (fun n -> n <> eq_name) names_to_gen in
     if (List.exists (fun x -> List.mem x skip) names_to_gen)
       then oldstatus
-    else 
+    else
     let gen_tac x =
-      (fun s -> 
-      let x' = String.concat " " x in
+      (fun s ->
+      let _ = String.concat " " x in
       let x = List.map mk_id x in
       (* let s = NTactics.print_tac false ("@generalize " ^ x') s in *)
       generalize0_tac x s) in
@@ -490,7 +490,7 @@ let subst_tac ~context ~dir skip cur_eq =
                 (* (List.map gen_tac names_to_gen)@ *)
             [gen_tac (List.rev names_to_gen);
                         NTactics.clear_tac names_to_gen;
-                 NTactics.rewrite_tac ~dir 
+                 NTactics.rewrite_tac ~dir
                    ~what:("",0,mk_id eq_name) ~where:default_pattern;
 (*                 NTactics.reduce_tac ~reduction:(`Normalize true)
                    ~where:default_pattern;*)
@@ -514,26 +514,26 @@ let clearid_tac ~context skip cur_eq =
 
   pp (lazy (Printf.sprintf "clearid: equation %s" eq_name));
   let streicher_id = mk_id "streicherK" in
-  let names_to_gen, _ = 
+  let names_to_gen, _ =
     cascade_select_in_ctx status ~subst:(get_subst status) context skip cur_eq in
   let gen_tac x = generalize0_tac (List.map mk_id x) in
-  
+
   match s with
   (* jmeq *)
   | NCic.Appl [_;_;_;_;_] ->
       let names_to_gen = List.rev names_to_gen in
       (*let gen_eq = NTactics.generalize_tac
        ~where:("",0,(Some (mk_appl [mk_id "jmeq_to_eq";
-                                    NotationPt.Implicit `JustOne; 
-                                    NotationPt.Implicit `JustOne; 
-                                    NotationPt.Implicit `JustOne; 
+                                    NotationPt.Implicit `JustOne;
+                                    NotationPt.Implicit `JustOne;
+                                    NotationPt.Implicit `JustOne;
                                     mk_id eq_name]),[], Some
                                     NotationPt.UserInput)) in*)
-      let gen_eq = generalize0_tac 
+      let gen_eq = generalize0_tac
                           [mk_appl [mk_id "jmeq_to_eq";
-                                    NotationPt.Implicit `JustOne; 
-                                    NotationPt.Implicit `JustOne; 
-                                    NotationPt.Implicit `JustOne; 
+                                    NotationPt.Implicit `JustOne;
+                                    NotationPt.Implicit `JustOne;
+                                    NotationPt.Implicit `JustOne;
                                     mk_id eq_name]] in
       NTactics.block_tac ((gen_tac (List.rev names_to_gen))::gen_eq::
                   [NTactics.clear_tac names_to_gen;
@@ -549,7 +549,7 @@ let clearid_tac ~context skip cur_eq =
     (* leibniz *)
   | NCic.Appl [_;_;_;_] ->
       begin
-       let names_to_gen, _ = 
+       let names_to_gen, _ =
          cascade_select_in_ctx status ~subst:(get_subst status) context skip cur_eq in
        let names_to_gen = eq_name :: (List.rev names_to_gen) in
        NTactics.block_tac ((gen_tac names_to_gen)::
@@ -559,7 +559,7 @@ let clearid_tac ~context skip cur_eq =
    						    NotationPt.Implicit `JustOne;
    						    NotationPt.Implicit `JustOne;
    						    NotationPt.Implicit `JustOne])
-   (*                 NTactics.reduce_tac ~reduction:(`Normalize true) 
+   (*                 NTactics.reduce_tac ~reduction:(`Normalize true)
                       ~where:default_pattern *)
                     ] @
                     let names_to_intro = List.tl names_to_gen in
@@ -577,23 +577,23 @@ let get_ctx st goal =
 let select_eq ctx acc domain status goal =
   let classify ~use_jmeq ~subst ctx' l r =
     (* FIXME: metasenv *)
-    if NCicReduction.are_convertible status ~metasenv:[] ~subst ctx' l r 
+    if NCicReduction.are_convertible status ~metasenv:[] ~subst ctx' l r
       then status, `Identity
       else status, (match hd_of_term l, hd_of_term r with
         | NCic.Const (NReference.Ref (_,NReference.Con (_,ki,nleft)) as kref),
-          NCic.Const (NReference.Ref (_,NReference.Con (_,kj,_))) -> 
+          NCic.Const (NReference.Ref (_,NReference.Con (_,kj,_))) ->
             if ki != kj then `Discriminate (0,true, use_jmeq)
             else
               let rit = NReference.mk_indty true kref in
-              let _,_,its,_,itno = NCicEnvironment.get_checked_indtys status rit in 
+              let _,_,its,_,itno = NCicEnvironment.get_checked_indtys status rit in
               let it = List.nth its itno in
               let newprods = nargs it nleft (ki-1) in
-              `Discriminate (newprods, false, use_jmeq) 
-        | NCic.Rel j, _  
+              `Discriminate (newprods, false, use_jmeq)
+        | NCic.Rel j, _
             when NCicTypeChecker.does_not_occur status ~subst ctx' (j-1) j r
               && l = NCic.Rel j -> `Subst `LeftToRight
-        | _, NCic.Rel j 
-            when NCicTypeChecker.does_not_occur status ~subst ctx' (j-1) j l 
+        | _, NCic.Rel j
+            when NCicTypeChecker.does_not_occur status ~subst ctx' (j-1) j l
               && r = NCic.Rel j -> `Subst `RightToLeft
         | (NCic.Rel _, _ | _, NCic.Rel _ ) -> `Cycle (* could be a blob too... *)
         | _ -> `Blob) in
@@ -603,28 +603,28 @@ let select_eq ctx acc domain status goal =
       pp (lazy ("provo classify di index = " ^string_of_int index));
       match (List.nth ctx (index - 1)) with
       | n, (NCic.Decl ty | NCic.Def (ty,_)) ->
-          (let _,ctx_ty = HExtlib.split_nth index ctx in 
+          (let _,ctx_ty = HExtlib.split_nth index ctx in
            let status, ty = NTacStatus.whd status ctx_ty (mk_cic_term ctx_ty ty) in
            let status, ty = term_of_cic_term status ty ctx_ty in
            pp (lazy (Printf.sprintf "select_eq tries %s" (status#ppterm ~context:ctx_ty ~subst:[] ~metasenv:[] ty)));
            let status, kind = match ty with
-           | NCic.Appl [NCic.Const (NReference.Ref (u,_)) ;_;l;r] 
+           | NCic.Appl [NCic.Const (NReference.Ref (u,_)) ;_;l;r]
                when NUri.name_of_uri u = "eq" ->
                classify ~use_jmeq:false ~subst:(get_subst status) ctx_ty l r
            | NCic.Appl [NCic.Const (NReference.Ref (u,_)) ;lty;l;rty;r]
-               when NUri.name_of_uri u = "jmeq" && 
-                 NCicReduction.are_convertible status ~metasenv:[] 
+               when NUri.name_of_uri u = "jmeq" &&
+                 NCicReduction.are_convertible status ~metasenv:[]
                    ~subst:(get_subst status) ctx_ty lty rty
                -> classify ~use_jmeq:true ~subst:(get_subst status) ctx_ty l r
-           | _ -> status, `NonEq 
+           | _ -> status, `NonEq
            in match kind with
               | `Identity ->
                   let status, goalty = term_of_cic_term status (get_goalty status goal) ctx in
                      status, Some (List.length ctx - i), kind
               | `Cycle | `Blob | `NonEq -> aux (i+1) (* XXX: skip cyclic/blob equations for now *)
-              | _ -> 
-                 if (List.for_all (fun x -> x <> n) acc) && 
-                    (List.exists (fun x -> x = n) domain) 
+              | _ ->
+                 if (List.for_all (fun x -> x <> n) acc) &&
+                    (List.exists (fun x -> x = n) domain)
 		 then status, Some (List.length ctx - i), kind
                  else aux (i+1))
     with Failure _ | Invalid_argument _ -> status, None, `Blob
@@ -636,10 +636,10 @@ let tagged_intro_tac curtag name =
   | `Notag -> NTactics.intro_tac name
   | `Eq use_jmeq ->
       NTactics.block_tac
-        [ NTactics.intro_tac name 
-        ; NTactics.reduce_tac 
+        [ NTactics.intro_tac name
+        ; NTactics.reduce_tac
             ~reduction:(`Whd true) ~where:((if use_jmeq then hp_pattern_jm else hp_pattern) name) ]
-        
+
 (*        status in
       distribute_tac (fun s g ->
         let eq_name,(NCic.Decl s | NCic.Def (s,_)) = List.nth context (cur_eq-1) in
@@ -677,42 +677,42 @@ let rec destruct_tac0 tags acc domain skip status goal =
   let status, selection, kind  = select_eq ctx acc domain status goal in
   pp (lazy ("destruct: acc is " ^ String.concat "," acc ));
   match selection, kind with
-  | None, _ -> 
-    pp (lazy (Printf.sprintf 
-       "destruct: no selection, context is %s, stack is %s" 
+  | None, _ ->
+    pp (lazy (Printf.sprintf
+       "destruct: no selection, context is %s, stack is %s"
        (status#ppcontext ~metasenv:[] ~subst ctx) (pptags tags)));
-     (match tags with 
+     (match tags with
       | [] -> status
       | curtag::tags' ->
-        let fresh = mk_fresh_name ctx 'e' 0 in 
+        let fresh = mk_fresh_name ctx 'e' 0 in
         let status' = NTactics.exec (tagged_intro_tac curtag fresh) status goal in
-        destruct_tac0 tags' acc (fresh::domain) skip status' 
+        destruct_tac0 tags' acc (fresh::domain) skip status'
           (get_newgoal status status' goal))
-  | Some cur_eq, `Discriminate (newprods,conflict,use_jmeq) -> 
-    pp (lazy (Printf.sprintf 
-      "destruct: discriminate - nselection is %d, context is %s,stack is %s" 
+  | Some cur_eq, `Discriminate (newprods,conflict,use_jmeq) ->
+    pp (lazy (Printf.sprintf
+      "destruct: discriminate - nselection is %d, context is %s,stack is %s"
        cur_eq (status#ppcontext ~metasenv:[] ~subst ctx) (pptags tags)));
       let status' = NTactics.exec (discriminate_tac ~context:ctx cur_eq) status goal in
       if conflict then status'
-      else 
+      else
         let newtags = HExtlib.mk_list (`Eq use_jmeq) newprods in
-        destruct_tac0 (newtags@tags) 
-             (name_of_rel ~context:ctx cur_eq::acc) 
+        destruct_tac0 (newtags@tags)
+             (name_of_rel ~context:ctx cur_eq::acc)
              (List.filter (fun x -> x <> name_of_rel ~context:ctx cur_eq) domain)
-             skip 
+             skip
              status' (get_newgoal status status' goal)
   | Some cur_eq, `Subst dir ->
-    pp (lazy (Printf.sprintf 
-      "destruct: subst - selection is %d, context is %s, stack is %s" 
+    pp (lazy (Printf.sprintf
+      "destruct: subst - selection is %d, context is %s, stack is %s"
         cur_eq (status#ppcontext ~metasenv:[] ~subst ctx) (pptags tags)));
     let status' = NTactics.exec (subst_tac ~context:ctx ~dir skip cur_eq) status goal in
       pp (lazy (Printf.sprintf " ctx after subst = %s" (status#ppcontext ~metasenv:[] ~subst (get_ctx status' (get_newgoal status status' goal)))));
     let eq_name,_ = List.nth ctx (cur_eq-1) in
     let newgoal = get_newgoal status status' goal in
-    let has_cleared = 
-     try 
+    let has_cleared =
+     try
        let _ = NTactics.find_in_context eq_name (get_ctx status' newgoal) in false
-     with 
+     with
       | Sys.Break as e -> raise e
       |_ -> true in
     let rm_eq b l = if b then List.filter (fun x -> x <> eq_name) l else l in
@@ -721,17 +721,17 @@ let rec destruct_tac0 tags acc domain skip status goal =
     let domain = rm_eq has_cleared domain in
       destruct_tac0 tags acc domain skip status' newgoal
  | Some cur_eq, `Identity ->
-    pp (lazy (Printf.sprintf 
-      "destruct: identity - selection is %d, context is %s, stack is %s" 
+    pp (lazy (Printf.sprintf
+      "destruct: identity - selection is %d, context is %s, stack is %s"
         cur_eq (status#ppcontext ~metasenv:[] ~subst ctx) (pptags tags)));
       let eq_name,_ = List.nth ctx (cur_eq-1) in
       let status' = NTactics.exec (clearid_tac ~context:ctx skip cur_eq) status goal in
       let newgoal = get_newgoal status status' goal in
-      let has_cleared = 
-       try 
+      let has_cleared =
+       try
          let _ = NTactics.find_in_context eq_name (get_ctx status' newgoal) in false
-       with 
-         | Sys.Break as e -> raise e         
+       with
+         | Sys.Break as e -> raise e
 	 | _ -> true in
       let rm_eq b l = if b then List.filter (fun x -> x <> eq_name) l else l in
       let acc = rm_eq has_cleared acc in
@@ -739,24 +739,24 @@ let rec destruct_tac0 tags acc domain skip status goal =
       let domain = rm_eq has_cleared domain in
         destruct_tac0 tags acc domain skip status' newgoal
   | Some cur_eq, `Cycle -> (* TODO, should never happen *)
-    pp (lazy (Printf.sprintf 
-      "destruct: cycle - selection is %d, context is %s, stack is %s" 
+    pp (lazy (Printf.sprintf
+      "destruct: cycle - selection is %d, context is %s, stack is %s"
         cur_eq (status#ppcontext ~metasenv:[] ~subst ctx) (pptags tags)));
       assert false
   | Some cur_eq, `Blob ->
-    pp (lazy (Printf.sprintf 
+    pp (lazy (Printf.sprintf
       "destruct: blob - selection is %d, context is %s, stack is %s"
       cur_eq (status#ppcontext ~metasenv:[] ~subst ctx) (pptags tags)));
       assert false
   | _ -> assert false
 ;;
 
-let destruct_tac dom skip s = 
-  NTactics.distribute_tac 
-    (fun s' g -> 
+let destruct_tac dom skip s =
+  NTactics.distribute_tac
+    (fun s' g ->
      let ctx = get_ctx s' g in
      let domain = match dom with
        | None -> List.map (fun (n,_) -> n) ctx
-       | Some l -> l 
+       | Some l -> l
      in
      destruct_tac0 [] [] domain skip s' g) s;;

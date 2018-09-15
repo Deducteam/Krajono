@@ -99,8 +99,8 @@ let rec print_pattern out pattern =
 
 let rec print_context out = function
   | [] -> ()
-  | [x, a] -> F.fprintf out "@[%a@]" print_var x
-  | (x, a) :: g ->
+  | [x, _] -> F.fprintf out "@[%a@]" print_var x
+  | (x, _) :: g ->
     (* Contexts are stored in reverse order. *)
     F.fprintf out "@[%a,@ %a@]"
       print_context g

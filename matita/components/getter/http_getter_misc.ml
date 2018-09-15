@@ -67,7 +67,7 @@ let iter_buf_size = 10240
 
 let iter_file_data f fname =
   let ic = open_in fname in
-  let buf = String.create iter_buf_size in
+  let buf = Bytes.create iter_buf_size in
   try
     while true do
       let bytes = input ic buf 0 iter_buf_size in
@@ -89,32 +89,32 @@ let hashtbl_sorted_iter f tbl =
     List.iter (fun k -> f k (Hashtbl.find tbl k)) sorted_keys
 
 let cp src dst =
-  try 
+  try
     let ic = open_in src in
       try
 	let oc = open_out dst in
-	let buf = String.create bufsiz in
+	let buf = Bytes.create bufsiz in
 	  (try
 	     while true do
 	       let bytes = input ic buf 0 bufsiz in
 		 if bytes = 0 then raise End_of_file else output oc buf 0 bytes
 	     done
-	   with 
+	   with
 	       End_of_file -> ()
 	  );
 	  close_in ic; close_out oc
-      with 
-	  Sys_error s -> 
+      with
+	  Sys_error s ->
 	    Http_getter_logger.log s;
 	    close_in ic
-	| e -> 
+	| e ->
 	    Http_getter_logger.log (Printexc.to_string e);
 	    close_in ic;
 	    raise e
-  with 
-      Sys_error s -> 
+  with
+      Sys_error s ->
 	Http_getter_logger.log s
-    | e -> 
+    | e ->
 	Http_getter_logger.log (Printexc.to_string e);
 	raise e
 
@@ -134,7 +134,7 @@ let wget ?output url =
           else  (* src and dst are the same: do nothing *)
             ())
   | url when Pcre.pmatch ~rex:http_scheme_RE url -> (* http:// *)
-      (let oc = 
+      (let oc =
         open_out (match output with Some f -> f | None -> Filename.basename url)
       in
       Http_user_agent.get_iter (fun data -> output_string oc data) url;
@@ -147,7 +147,7 @@ let gzip ?(keep = false) ?output fname =
   Http_getter_logger.log ~level:3
     (sprintf "gzipping %s (keep: %b, output: %s)" fname keep output);
   let (ic, oc) = (open_in fname, Gzip.open_out output) in
-  let buf = String.create bufsiz in
+  let buf = Bytes.create bufsiz in
   (try
     while true do
       let bytes = input ic buf 0 bufsiz in
@@ -179,7 +179,7 @@ let gunzip ?(keep = false) ?output fname =
     try
       let ic = Gzip.open_in_chan zic in
       let oc = open_out output in
-      let buf = String.create bufsiz in
+      let buf = Bytes.create bufsiz in
       (try
         while true do
           let bytes = Gzip.input ic buf 0 bufsiz in
@@ -240,7 +240,7 @@ let http_get url =
     let fname = Pcre.replace ~rex:file_scheme_RE url in
     try
       let size = (Unix.stat fname).Unix.st_size in
-      let buf = String.create size in
+      let buf = Bytes.create size in
       let ic = open_in fname in
       really_input ic buf 0 size ;
       close_in ic;
@@ -284,10 +284,10 @@ let strip_suffix ~suffix s =
   with Invalid_argument _ ->
     raise (Invalid_argument "Http_getter_misc.strip_suffix")
 
-let rec list_uniq = function 
+let rec list_uniq = function
   | [] -> []
   | h::[] -> [h]
-  | h1::h2::tl when h1 = h2 -> list_uniq (h2 :: tl) 
+  | h1::h2::tl when h1 = h2 -> list_uniq (h2 :: tl)
   | h1::tl (* when h1 <> h2 *) -> h1 :: list_uniq tl
 
 let extension s =
@@ -298,7 +298,7 @@ let extension s =
 
 let temp_file_of_uri uri =
   let flat_string s s' c =
-    let cs = String.copy s in
+    let cs = Bytes.of_string s in
     for i = 0 to (String.length s) - 1 do
       if String.contains s' s.[i] then cs.[i] <- c
     done;
@@ -312,4 +312,3 @@ let backtick cmd =
   let res = input_line ic in
   ignore (Unix.close_process_in ic);
   res
-

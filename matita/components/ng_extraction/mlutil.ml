@@ -57,8 +57,8 @@ let new_meta _ =
 let type_subst i t0 t =
   let rec subst t = match t with
     | Tvar j when i = j -> t0
-    | Tmeta {contents=None} -> t
-    | Tmeta {contents=Some u} -> subst u
+    | Tmeta {contents=None; _} -> t
+    | Tmeta {contents=Some u; _} -> subst u
     | Tarr (a,b) -> Tarr (subst a, subst b)
     | Tglob (r, l) -> Tglob (r, List.map subst l)
     | a -> a
@@ -69,8 +69,8 @@ let type_subst i t0 t =
 let type_subst_list l t =
   let rec subst t = match t with
     | Tvar j -> List.nth l (j-1)
-    | Tmeta {contents=None} -> t
-    | Tmeta {contents=Some u} -> subst u
+    | Tmeta {contents=None; _} -> t
+    | Tmeta {contents=Some u; _} -> subst u
     | Tarr (a,b) -> Tarr (subst a, subst b)
     | Tglob (r, l) -> Tglob (r, List.map subst l)
     | a -> a
@@ -81,8 +81,8 @@ let type_subst_list l t =
 let type_subst_vect v t =
   let rec subst t = match t with
     | Tvar j -> v.(j-1)
-    | Tmeta {contents=None} -> t
-    | Tmeta {contents=Some u} -> subst u
+    | Tmeta {contents=None; _} -> t
+    | Tmeta {contents=Some u; _} -> subst u
     | Tarr (a,b) -> Tarr (subst a, subst b)
     | Tglob (r, l) -> Tglob (r, List.map subst l)
     | a -> a
@@ -96,8 +96,8 @@ let instantiation (nb,t) = type_subst_vect (Array.init nb new_meta) t
 
 let rec type_occurs alpha t =
   match t with
-  | Tmeta {id=beta; contents=None} -> alpha = beta
-  | Tmeta {contents=Some u} -> type_occurs alpha u
+  | Tmeta {id=beta; contents=None; _} -> alpha = beta
+  | Tmeta {contents=Some u; _} -> type_occurs alpha u
   | Tarr (t1, t2) -> type_occurs alpha t1 || type_occurs alpha t2
   | Tglob (_r,l) -> List.exists (type_occurs alpha) l
   | _ -> false
@@ -157,7 +157,7 @@ module Mlenv = struct
 
   let rec find_free set = function
     | Tmeta m when m.contents = None -> Metaset.add m set
-    | Tmeta {contents = Some t} -> find_free set t
+    | Tmeta {contents = Some t; _} -> find_free set t
     | Tarr (a,b) -> find_free (find_free set a) b
     | Tglob (_,l) -> List.fold_left find_free set l
     | _ -> set
@@ -168,7 +168,7 @@ module Mlenv = struct
   let clean_free mle =
     let rem = ref Metaset.empty
     and add = ref Metaset.empty in
-    let clean m = match m.contents with
+    let clean (m:Miniml.ml_meta) = match m.contents with
       | None -> ()
       | Some u -> rem := Metaset.add m !rem; add := find_free !add u
     in
@@ -183,8 +183,8 @@ module Mlenv = struct
     let map = ref (Intmap.empty : int Intmap.t) in
     let add_new i = incr c; map := Intmap.add i !c !map; !c in
     let rec meta2var t = match t with
-      | Tmeta {contents=Some u} -> meta2var u
-      | Tmeta ({id=i} as m) ->
+      | Tmeta {contents=Some u; _} -> meta2var u
+      | Tmeta ({id=i; _} as m) ->
 	  (try Tvar (Intmap.find i !map)
 	   with Not_found ->
 	     if Metaset.mem m mle.free then t
@@ -216,9 +216,9 @@ end
 
 (*s Does a section path occur in a ML type ? *)
 
-let rec type_mem_kn uri = 
+let rec type_mem_kn uri =
  function
-  | Tmeta {contents = Some t} -> type_mem_kn uri t
+  | Tmeta {contents = Some t; _} -> type_mem_kn uri t
   | Tglob (r,l) ->
      let NReference.Ref (uri',_) = r in
       NUri.eq uri uri' || List.exists (type_mem_kn uri) l
@@ -229,7 +229,7 @@ let rec type_mem_kn uri =
 
 let type_maxvar t =
   let rec parse n = function
-    | Tmeta {contents = Some t} -> parse n t
+    | Tmeta {contents = Some t; _} -> parse n t
     | Tvar i -> max i n
     | Tarr (a,b) -> parse (parse n a) b
     | Tglob (_,l) -> List.fold_left parse n l
@@ -237,7 +237,7 @@ let type_maxvar t =
   in parse 0 t
 
 (*s What are the type variables occurring in [t]. *)
-
+(*
 let intset_union_map_list f l =
   List.fold_left (fun s t -> Intset.union s (f t)) Intset.empty l
 
@@ -245,16 +245,17 @@ let intset_union_map_array f a =
   Array.fold_left (fun s t -> Intset.union s (f t)) Intset.empty a
 
 let rec type_listvar = function
-  | Tmeta {contents = Some t} -> type_listvar t
+  | Tmeta {contents = Some t; _} -> type_listvar t
   | Tvar i | Tvar' i -> Intset.singleton i
   | Tarr (a,b) -> Intset.union (type_listvar a) (type_listvar b)
   | Tglob (_,l) -> intset_union_map_list type_listvar l
   | _ -> Intset.empty
+ *)
 
 (*s From [a -> b -> c] to [[a;b],c]. *)
 
 let rec type_decomp = function
-  | Tmeta {contents = Some t} -> type_decomp t
+  | Tmeta {contents = Some t; _} -> type_decomp t
   | Tarr (a,b) -> let l,h = type_decomp b in a::l, h
   | a -> [],a
 
@@ -267,7 +268,7 @@ let rec type_recomp (l,t) = match l with
 (*s Translating [Tvar] to [Tvar'] to avoid clash. *)
 
 let rec var2var' = function
-  | Tmeta {contents = Some t} -> var2var' t
+  | Tmeta {contents = Some t; _} -> var2var' t
   | Tvar i -> Tvar' i
   | Tarr (a,b) -> Tarr (var2var' a, var2var' b)
   | Tglob (r,l) -> Tglob (r, List.map var2var' l)
@@ -281,7 +282,7 @@ type 'status abbrev_map =
 
 let type_expand status env t =
   let rec expand status = function
-    | Tmeta {contents = Some t} -> expand status t
+    | Tmeta {contents = Some t; _} -> expand status t
     | Tglob (r,l) ->
 	(match env status r with
 	   | Some (status,mlt) -> expand status (type_subst_list l mlt)
@@ -317,7 +318,7 @@ let type_to_sign status env t =
 
 let type_to_signature status env t =
   let rec f = function
-    | Tmeta {contents = Some t} -> f t
+    | Tmeta {contents = Some t; _} -> f t
     | Tarr (Tdummy d, b) -> Kill d :: f b
     | Tarr (_, b) -> Keep :: f b
     | _ -> []
@@ -364,7 +365,7 @@ let rec sign_no_final_keeps = function
 let type_expunge_from_sign status env s t =
   let rec expunge status s t =
     if s = [] then status,t else match t with
-      | Tmeta {contents = Some t} -> expunge status s t
+      | Tmeta {contents = Some t; _} -> expunge status s t
       | Tarr (a,b) ->
 	  let status,t = expunge status (List.tl s) b in
 	  status, if List.hd s = Keep then Tarr (a, t) else t
@@ -466,14 +467,14 @@ let ast_occurs_itvl k k' t =
   with Found -> true
 
 (*s Number of occurences of [Rel k] (resp. [Rel 1]) in [t]. *)
-
+(*
 let nb_occur_k k t =
   let cpt = ref 0 in
   ast_iter_rel (fun i -> if i = k then incr cpt) t;
   !cpt
 
 let nb_occur t = nb_occur_k 1 t
-
+                 *)
 (* Number of occurences of [Rel 1] in [t], with special treatment of match:
    occurences in different branches aren't added, but we rather use max. *)
 
@@ -595,8 +596,8 @@ let rec named_lams ids a = match ids with
 let rec many_lams id a = function
   | 0 -> a
   | n -> many_lams id (MLlam (id,a)) (pred n)
-
-let anonym_lams a n = many_lams anonymous a n
+(*
+let anonym_lams a n = many_lams anonymous a n *)
 let anonym_tmp_lams a n = many_lams (Tmp anonymous_name) a n
 let dummy_lams a n = many_lams Dummy a n
 
@@ -628,7 +629,7 @@ let rec test_eta_args_lift k n = function
   | a :: q -> (a = (MLrel (k+n))) && (test_eta_args_lift k (pred n) q)
 
 (*s Computes an eta-reduction. *)
-
+(*
 let eta_red e =
   let ids,t = collect_lams e in
   let n = List.length ids in
@@ -650,10 +651,10 @@ let eta_red e =
 	then named_lams ids (ast_lift (-p) body)
 	else e
     | _ -> e
-
+ *)
 (*s Computes all head linear beta-reductions possible in [(t a)].
   Non-linear head beta-redex become let-in. *)
-
+(*
 let rec linear_beta_red a t = match a,t with
   | [], _ -> t
   | a0::a, MLlam (id,t) ->
@@ -668,14 +669,14 @@ let rec linear_beta_red a t = match a,t with
 let rec tmp_head_lams = function
   | MLlam (id, t) -> MLlam (tmp_id id, tmp_head_lams t)
   | e -> e
-
+ *)
 (*s Applies a substitution [s] of constants by their body, plus
   linear beta reductions at modified positions.
   Moreover, we mark some lambdas as suitable for later linear
   reduction (this helps the inlining of recursors).
 *)
 
-let rec ast_glob_subst _s _t = assert false (*CSC: reimplement match t with
+let ast_glob_subst _s _t = assert false (*CSC: reimplement match t with
   | MLapp ((MLglob ((ConstRef kn) as refe)) as f, a) ->
       let a = List.map (fun e -> tmp_head_lams (ast_glob_subst s e)) a in
       (try linear_beta_red a (Refmap'.find refe s)
@@ -789,7 +790,7 @@ let rec merge_ids ids ids' = match ids,ids' with
 
 let is_exn = function MLexn _ -> true | _ -> false
 
-let rec permut_case_fun br _acc =
+let permut_case_fun br _acc =
   let nb = ref max_int in
   Array.iter (fun (_,_,t) ->
 		let ids, c = collect_lams t in
@@ -1167,7 +1168,7 @@ let optimize_fix a =
 (*S Inlining. *)
 
 (* Utility functions used in the decision of inlining. *)
-
+(*
 let rec ml_size = function
   | MLapp(t,l) -> List.length l + ml_size t + ml_size_list l
   | MLlam(_,t) -> 1 + ml_size t
@@ -1189,7 +1190,7 @@ let rec is_constr = function
   | MLcons _   -> true
   | MLlam(_,t) -> is_constr t
   | _          -> false
-
+ *)
 (*s Strictness *)
 
 (* A variable is strict if the evaluation of the whole term implies
@@ -1198,12 +1199,12 @@ let rec is_constr = function
    it begins by at least one non-strict lambda, since the corresponding
    argument to [t] might be unevaluated in the expanded code. *)
 
-exception Toplevel
+(* exception Toplevel *)
 
-let lift n l = List.map ((+) n) l
+(* let lift n l = List.map ((+) n) l
 
 let pop n l = List.map (fun x -> if x<=n then raise Toplevel else x-n) l
-
+ *)
 (* This function returns a list of de Bruijn indices of non-strict variables,
    or raises [Toplevel] if it has an internal non-strict variable.
    In fact, not all variables are checked for strictness, only the ones which
@@ -1211,7 +1212,7 @@ let pop n l = List.map (fun x -> if x<=n then raise Toplevel else x-n) l
    the behaviour when going through a lambda: should we add the corresponding
    variable to the candidates?  We use this flag to check only the external
    lambdas, those that will correspond to arguments. *)
-
+(*
 let rec non_stricts add cand = function
   | MLlam (_id,t) ->
       let cand = lift 1 cand in
@@ -1242,21 +1243,21 @@ let rec non_stricts add cand = function
 	   let n = List.length i in
 	   let cand = lift n cand in
 	   let cand = pop n (non_stricts add cand t) in
-	   Sort.merge (<=) cand c) [] v
+	   List.merge Pervasives.compare cand c) [] v
 	(* [merge] may duplicates some indices, but I don't mind. *)
   | MLmagic t ->
       non_stricts add cand t
   | _ ->
       cand
-
+ *)
 (* The real test: we are looking for internal non-strict variables, so we start
    with no candidates, and the only positive answer is via the [Toplevel]
    exception. *)
-
+(*
 let is_not_strict t =
   try let _ = non_stricts true [] t in false
   with Toplevel -> true
-
+ *)
 (*s Inlining decision *)
 
 (* [inline_test] answers the following question:
@@ -1277,9 +1278,10 @@ let is_not_strict t =
    inside its own structure. But to be safe, we adopt this
    restriction for the moment.
 *)
-
+(*
 let inline_test _r _t =
   (*CSC:if not (auto_inline ()) then*) false
+ *)
 (*
   else
     let c = match r with ConstRef c -> c | _ -> assert false in
@@ -1312,11 +1314,11 @@ let manual_inline_set =
       "Coq.Init.Specif.proj1_sig";
     ]
     Cset_env.empty*)
-
+(*
 let manual_inline = function (*CSC:
   | ConstRef c -> Cset_env.mem c manual_inline_set
   |*) _ -> false
-
+ *)
 (* If the user doesn't say he wants to keep [t], we inline in two cases:
    \begin{itemize}
    \item the user explicitly requests it

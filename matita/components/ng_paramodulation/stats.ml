@@ -1,17 +1,17 @@
 (*
-    ||M||  This file is part of HELM, an Hypertextual, Electronic        
-    ||A||  Library of Mathematics, developed at the Computer Science     
-    ||T||  Department, University of Bologna, Italy.                     
-    ||I||                                                                
-    ||T||  HELM is free software; you can redistribute it and/or         
-    ||A||  modify it under the terms of the GNU General Public License   
-    \   /  version 2 or (at your option) any later version.      
-     \ /   This software is distributed as is, NO WARRANTY.     
+    ||M||  This file is part of HELM, an Hypertextual, Electronic
+    ||A||  Library of Mathematics, developed at the Computer Science
+    ||T||  Department, University of Bologna, Italy.
+    ||I||
+    ||T||  HELM is free software; you can redistribute it and/or
+    ||A||  modify it under the terms of the GNU General Public License
+    \   /  version 2 or (at your option) any later version.
+     \ /   This software is distributed as is, NO WARRANTY.
       V_______________________________________________________________ *)
 
 (* $Id: stats.ml 9822 2009-06-03 15:37:06Z denes $ *)
 
-module Stats (B : Terms.Blob) = 
+module Stats (B : Terms.Blob) =
   struct
 
     module SymbMap = Map.Make(B)
@@ -57,27 +57,27 @@ module Stats (B : Terms.Blob) =
 
     let goal_pos t goal =
       let rec aux path = function
-       | Terms.Var _ -> [] 
+       | Terms.Var _ -> []
        | Terms.Leaf x ->
            if B.eq t x then path else []
        | Terms.Node l ->
-           match 
+           match
              HExtlib.list_findopt
-               (fun x i -> 
+               (fun x i ->
                   let p = aux (i::path) x in
                   if p = [] then None else Some p)
                l
            with
            | None -> []
            | Some p -> p
-      in 
-        aux [] 
+      in
+        aux []
           (match goal with
           | _,Terms.Equation (l,r,ty,_),_,_ -> Terms.Node [ Terms.Leaf B.eqP; ty; l; r ]
 	  | _,Terms.Predicate p,_,_ -> p)
     ;;
 
-    let parse_symbols l goal = 
+    let parse_symbols l goal =
       let res = parse_symbols (parse_symbols SymbMap.empty [goal]) l in
 	SymbMap.fold (fun t (occ,ar) acc ->
 			(t,occ,ar,goal_occ_nbr t goal,goal_pos t goal)::acc) res []
@@ -115,14 +115,23 @@ module Stats (B : Terms.Blob) =
 			    else
 			      dependencies op tl acc
 			else dependencies op tl acc
-                    | ((Terms.Node (Terms.Leaf op1::t) as x),y)
+                    | ((Terms.Node (Terms.Leaf op1::t) as x),y) when leaf_count x > leaf_count y ->
+                         let rec term_leaves = function
+                           | Terms.Node l -> List.fold_left (fun acc x -> acc @ (term_leaves x)) [] l
+                           | Terms.Leaf x -> [x]
+                           | _ -> []
+                         in
+                         if List.mem op (List.filter (fun z -> not (B.eq op1 z)) (term_leaves x)) then
+                           dependencies op tl (op1::acc)
+                         else
+                           dependencies op tl acc
                     | (y,(Terms.Node (Terms.Leaf op1::t) as x)) when leaf_count x > leaf_count y ->
                          let rec term_leaves = function
                            | Terms.Node l -> List.fold_left (fun acc x -> acc @ (term_leaves x)) [] l
                            | Terms.Leaf x -> [x]
                            | _ -> []
                          in
-                         if List.mem op (List.filter (fun z -> not (B.eq op1 z)) (term_leaves x)) then 
+                         if List.mem op (List.filter (fun z -> not (B.eq op1 z)) (term_leaves x)) then
                            dependencies op tl (op1::acc)
                          else
                            dependencies op tl acc

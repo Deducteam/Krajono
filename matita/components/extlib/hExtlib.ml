@@ -1,14 +1,14 @@
 (* Copyright (C) 2005, HELM Team.
- * 
+ *
  * This file is part of HELM, an Hypertextual, Electronic
  * Library of Mathematics, developed at the Computer Science
  * Department, University of Bologna, Italy.
- * 
+ *
  * HELM is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License
  * as published by the Free Software Foundation; either version 2
  * of the License, or (at your option) any later version.
- * 
+ *
  * HELM is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
@@ -18,7 +18,7 @@
  * along with HELM; if not, write to the Free Software
  * Foundation, Inc., 59 Temple Place - Suite 330, Boston,
  * MA  02111-1307, USA.
- * 
+ *
  * For details, see the HELM World-Wide-Web page,
  * http://cs.unibo.it/helm/.
  *)
@@ -31,15 +31,15 @@ let profiling_enabled = ref false ;; (* ComponentsConf.profiling *)
 
 let something_profiled = ref false
 
-let _ = 
+let _ =
   if !something_profiled then
-    at_exit 
-      (fun _ -> 
-        prerr_endline 
-         (Printf.sprintf "!! %39s ---------- --------- --------- ---------" 
+    at_exit
+      (fun _ ->
+        prerr_endline
+         (Printf.sprintf "!! %39s ---------- --------- --------- ---------"
            (String.make 39 '-'));
-        prerr_endline 
-         (Printf.sprintf "!! %-39s %10s %9s %9s %9s" 
+        prerr_endline
+         (Printf.sprintf "!! %-39s %10s %9s %9s %9s"
            "function" "#calls" "total" "max" "average"))
 
 let profiling_printings = ref (fun _ -> true)
@@ -76,7 +76,7 @@ let profile ?(enable = true) s =
        begin
         something_profiled := true;
         prerr_endline
-         (Printf.sprintf "!! %-39s %10d %9.4f %9.4f %9.4f" 
+         (Printf.sprintf "!! %-39s %10d %9.4f %9.4f %9.4f"
          s !calls !total !max (!total /. (float_of_int !calls)))
        end);
    { profile = profile }
@@ -121,15 +121,15 @@ let trim_blanks s =
 (** {2 Char processing} *)
 
 let is_alpha c =
-  let code = Char.code c in 
+  let code = Char.code c in
   (code >= 65 && code <= 90) || (code >= 97 && code <= 122)
 
 let is_digit c =
-  let code = Char.code c in 
+  let code = Char.code c in
   code >= 48 && code <= 57
 
 let is_blank c =
-  let code = Char.code c in 
+  let code = Char.code c in
   code = 9 || code = 10 || code = 13 || code = 32
 
 let is_alphanum c = is_alpha c || is_digit c
@@ -166,31 +166,31 @@ let list_index p =
   aux 0
 ;;
 
-let rec list_iter_default2 f l1 def l2 = 
+let rec list_iter_default2 f l1 def l2 =
   match l1,l2 with
     | [], _ -> ()
-    | a::ta, b::tb -> f a b; list_iter_default2 f ta def tb 
-    | a::ta, [] -> f a def; list_iter_default2 f ta def [] 
+    | a::ta, b::tb -> f a b; list_iter_default2 f ta def tb
+    | a::ta, [] -> f a def; list_iter_default2 f ta def []
 ;;
 
-let rec list_forall_default3 f l1 l2 def l3 = 
+let rec list_forall_default3 f l1 l2 def l3 =
   match l1,l2,l3 with
     | [], [], _ -> true
     | [], _, _
     | _, [], _ -> raise (Invalid_argument "list_forall_default3")
     | a::ta, b::tb, c::tc -> f a b c && list_forall_default3 f ta tb def tc
-    | a::ta, b::tb, [] -> f a b def && list_forall_default3 f ta tb def [] 
+    | a::ta, b::tb, [] -> f a b def && list_forall_default3 f ta tb def []
 ;;
 
 exception FailureAt of int;;
 
-let list_forall_default3_var f l1 l2 def l3 = 
+let list_forall_default3_var f l1 l2 def l3 =
   let rec aux f l1 l2 def l3 i =
     match l1,l2,l3 with
       | [], [], _ -> true
       | [], _, _
       | _, [], _ -> raise (Invalid_argument "list_forall_default3")
-      | a::ta, b::tb, c::tc -> 
+      | a::ta, b::tb, c::tc ->
       	  if f a b c then aux f ta tb def tc (i+1)
 	  else raise (FailureAt i)
       | a::ta, b::tb, [] ->
@@ -210,7 +210,7 @@ let sharing_map f l =
   let l1 = aux true l in
   if !unchanged then l else l1
 ;;
-        
+
 let sharing_map_acc f acc l =
   let unchanged = ref true in
   let final_acc = ref acc in
@@ -224,10 +224,10 @@ let sharing_map_acc f acc l =
   !final_acc, if !unchanged then l else l1
 ;;
 
-let rec list_uniq ?(eq=(=)) = function 
+let rec list_uniq ?(eq=(=)) = function
   | [] -> []
   | h::[] -> [h]
-  | h1::h2::tl when eq h1 h2 -> list_uniq ~eq (h2 :: tl) 
+  | h1::h2::tl when eq h1 h2 -> list_uniq ~eq (h2 :: tl)
   | h1::tl (* when h1 <> h2 *) -> h1 :: list_uniq ~eq tl
 
 let rec filter_map f =
@@ -239,7 +239,7 @@ let rec filter_map f =
       | Some v -> v :: filter_map f tl)
 
 let filter_map_acc f acc l =
-  let acc, res = 
+  let acc, res =
    List.fold_left
     (fun (acc, res) t ->
        match f acc t with
@@ -251,7 +251,7 @@ let filter_map_acc f acc l =
 ;;
 
 let filter_map_monad f acc l =
-  let acc, res = 
+  let acc, res =
    List.fold_left
     (fun (acc, res) t ->
        match f acc t with
@@ -265,23 +265,23 @@ let filter_map_monad f acc l =
 let list_rev_map_filter f l =
    let rec aux a = function
       | []       -> a
-      | hd :: tl -> 
+      | hd :: tl ->
          begin match f hd with
 	    | None   -> aux a tl
-	    | Some b -> aux (b :: a) tl 
+	    | Some b -> aux (b :: a) tl
          end
-   in 
+   in
    aux [] l
 
 let list_rev_map_filter_fold f v l =
    let rec aux v a = function
       | []       -> v, a
-      | hd :: tl -> 
+      | hd :: tl ->
          begin match f v hd with
 	    | v, None   -> aux v a tl
-	    | v, Some b -> aux v (b :: a) tl 
+	    | v, Some b -> aux v (b :: a) tl
          end
-   in 
+   in
    aux v [] l
 
 let list_concat ?(sep = []) =
@@ -292,7 +292,7 @@ let list_concat ?(sep = []) =
     | hd :: tl -> aux ([sep; hd] @ acc) tl
   in
   aux []
-  
+
 let list_iter_sep ~sep f =
   let rec aux =
     function
@@ -301,11 +301,11 @@ let list_iter_sep ~sep f =
     | hd :: tl -> f hd; sep (); aux tl
   in
   aux
-  
-let rec list_findopt f l = 
-  let rec aux k = function 
-    | [] -> None 
-    | x::tl -> 
+
+let rec list_findopt f l =
+  let rec aux k = function
+    | [] -> None
+    | x::tl ->
         (match f x k with
         | None -> aux (succ k) tl
         | Some _ as rc -> rc)
@@ -321,7 +321,7 @@ let split_nth n l =
   aux [] n l
 
 let list_last l =
-  let l = List.rev l in 
+  let l = List.rev l in
   try List.hd l with exn -> raise (Failure "HExtlib.list_last")
 ;;
 
@@ -352,10 +352,10 @@ let merge canonicals elements extern n m =
     match cn,cm with
       | None, None -> canonicals, elements, extern
       | None, Some c
-      | Some c, None -> 
+      | Some c, None ->
 	  let l,elements = rm_assoc_assert c elements in
-          let canonicals = 
-	    List.filter (fun (_,xc) -> not (xc = c)) canonicals 
+          let canonicals =
+	    List.filter (fun (_,xc) -> not (xc = c)) canonicals
 	  in
 	    canonicals,elements,l@extern
       | Some cn, Some cm when cn=cm ->
@@ -363,30 +363,30 @@ let merge canonicals elements extern n m =
       | Some cn, Some cm ->
 	  let ln,elements = rm_assoc_assert cn elements in
 	  let lm,elements = rm_assoc_assert cm elements in
-	  let canonicals = 
-	    (n,cm)::(m,cm)::List.map 
-	      (fun ((x,xc) as p)  -> 
+	  let canonicals =
+	    (n,cm)::(m,cm)::List.map
+	      (fun ((x,xc) as p)  ->
 		 if xc = cn then (x,cm) else p) canonicals
-	  in 
-	  let elements = (cm,ln@lm)::elements 
+	  in
+	  let elements = (cm,ln@lm)::elements
 	  in
 	    canonicals,elements,extern
 ;;
 
 (* f x gives the direct dependencies of x.
-   x must not belong to (f x). 
+   x must not belong to (f x).
    All elements not in l are merged into a single extern class *)
 let clusters f l =
   let canonicals = List.map (fun x -> (x,x)) l in
   let elements = List.map (fun x -> (x,[x])) l in
   let extern = [] in
-  let _,elements,extern = 
-    List.fold_left 
+  let _,elements,extern =
+    List.fold_left
      (fun (canonicals,elements,extern) x ->
        let dep = f x in
-	 List.fold_left 
+	 List.fold_left
 	   (fun (canonicals,elements,extern) d ->
-	      merge canonicals elements extern d x) 
+	      merge canonicals elements extern d x)
 	   (canonicals,elements,extern) dep)
      (canonicals,elements,extern) l
   in
@@ -430,17 +430,17 @@ let mkdir path =
   let components = split ~sep:'/' path in
   let rec aux where = function
     | [] -> ()
-    | piece::tl -> 
+    | piece::tl ->
         let path =
           if where = "" then piece else where ^ "/" ^ piece in
         (try
-          Unix.mkdir path 0o755; chmod 0o2775 path 
-        with 
+          Unix.mkdir path 0o755; chmod 0o2775 path
+        with
         | Unix.Unix_error (Unix.EEXIST,_,_) -> ()
         | Unix.Unix_error (Unix.EISDIR,_,_) -> () (* work-around for a bug in FreeBSD *)
-        | Unix.Unix_error (e,_,_) -> 
-            raise 
-              (Failure 
+        | Unix.Unix_error (e,_,_) ->
+            raise
+              (Failure
                 ("Unix.mkdir " ^ path ^ " 0o2775 :" ^ (Unix.error_message e))));
         aux path tl
   in
@@ -460,7 +460,7 @@ let input_file fname =
 let input_all ic =
   let size = 10240 in
   let buf = Buffer.create size in
-  let s = String.create size in
+  let s = Bytes.create size in
   (try
     while true do
       let bytes = input ic s 0 size in
@@ -470,7 +470,7 @@ let input_all ic =
   with End_of_file -> ());
   Buffer.contents buf
 
-let output_file ~filename ~text = 
+let output_file ~filename ~text =
   let oc = open_out filename in
   output_string oc text;
   close_out oc;
@@ -526,18 +526,18 @@ let tilde_expand s =
       s
   in
   String.concat " " (List.map expand_one (blank_split s))
-  
-let find ?(test = fun _ -> true) path = 
-  let rec aux acc todo = 
+
+let find ?(test = fun _ -> true) path =
+  let rec aux acc todo =
     match todo with
     | [] -> acc
     | path :: tl ->
         try
           let handle = Unix.opendir path in
           let dirs = ref [] in
-          let matching_files = ref [] in 
-          (try 
-            while true do 
+          let matching_files = ref [] in
+          (try
+            while true do
               match Unix.readdir handle with
               | "." | ".." -> ()
               | entry ->
@@ -571,7 +571,7 @@ let is_dir_empty d =
 
 let safe_rmdir d = try Unix.rmdir d with Unix.Unix_error _ -> ()
 
-let rec rmdir_descend d = 
+let rec rmdir_descend d =
   if is_dir_empty d then
     begin
       safe_rmdir d;
@@ -607,10 +607,10 @@ let raise_localized_exception ~offset floc exn =
  let floc = floc_of_loc (x,y) in
   raise (Localized (floc, exn))
 
-let estimate_size x = 
+let estimate_size x =
   4 * (String.length (Marshal.to_string x [])) / 1024
 
-let normalize_path s = 
+let normalize_path s =
   let s = Str.global_replace (Str.regexp "//") "/" s in
   let l = Str.split (Str.regexp "/") s in
   let rec aux acc = function
@@ -632,20 +632,20 @@ let find_in paths path =
        try
          if (Unix.stat path).Unix.st_kind = Unix.S_REG then path
          else aux tl
-       with Unix.Unix_error _ -> 
+       with Unix.Unix_error _ ->
                aux tl
    in
    try
      aux paths
-   with Unix.Unix_error _ | Failure _ -> 
-     raise 
+   with Unix.Unix_error _ | Failure _ ->
+     raise
        (Failure "find_in")
 ;;
 
-let is_prefix_of_aux d1 d2 = 
+let is_prefix_of_aux d1 d2 =
   let len1 = String.length d1 in
   let len2 = String.length d2 in
-  if len2 < len1 then 
+  if len2 < len1 then
     false, len1, len2
   else
     let pref = String.sub d2 0 len1 in
@@ -659,7 +659,7 @@ let chop_prefix prefix s =
   let b,lp,ls = is_prefix_of_aux prefix s in
   if b then
     String.sub s lp (ls - lp)
-  else 
+  else
     s
 ;;
 
@@ -687,4 +687,3 @@ let rec list_skip n l =
   | n,_::l -> list_skip (n-1) l
   | _, [] -> assert false
 ;;
-

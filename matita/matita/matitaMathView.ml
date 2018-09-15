@@ -1,14 +1,14 @@
 (* Copyright (C) 2004-2005, HELM Team.
- * 
+ *
  * This file is part of HELM, an Hypertextual, Electronic
  * Library of Mathematics, developed at the Computer Science
  * Department, University of Bologna, Italy.
- * 
+ *
  * HELM is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License
  * as published by the Free Software Foundation; either version 2
  * of the License, or (at your option) any later version.
- * 
+ *
  * HELM is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
@@ -18,7 +18,7 @@
  * along with HELM; if not, write to the Free Software
  * Foundation, Inc., 59 Temple Place - Suite 330, Boston,
  * MA  02111-1307, USA.
- * 
+ *
  * For details, see the HELM World-Wide-Web page,
  * http://cs.unibo.it/helm/.
  *)
@@ -64,7 +64,7 @@ class sequentsViewer ~(notebook:GPack.notebook) ~(cicMathView:cicMathView) () =
     val logo = (GMisc.image
       ~file:(MatitaMisc.image_path "matita_medium.png") ()
       :> GObj.widget)
-            
+
     val logo_with_qed = (GMisc.image
       ~file:(MatitaMisc.image_path "matita_small.png") ()
       :> GObj.widget)
@@ -91,7 +91,7 @@ class sequentsViewer ~(notebook:GPack.notebook) ~(cicMathView:cicMathView) () =
           GtkSignal.disconnect notebook#as_widget id;
           switch_page_callback <- None
       | None -> ());
-      for i = 0 to pages do notebook#remove_page 0 done; 
+      for i = 0 to pages do notebook#remove_page 0 done;
       notebook#set_show_tabs true;
       pages <- 0;
       page2goal <- [];
@@ -147,7 +147,7 @@ class sequentsViewer ~(notebook:GPack.notebook) ~(cicMathView:cicMathView) () =
       let add_tab markup goal_switch =
         let goal = Stack.goal_of_switch goal_switch in
         if not (List.mem goal !added_goals) then begin
-          ignore(notebook#append_page 
+          ignore(notebook#append_page
             ~tab_label:(tab_label markup) (win goal_switch));
           page2goal <- (!page, goal_switch) :: page2goal;
           goal2page <- (goal_switch, !page) :: goal2page;
@@ -242,16 +242,16 @@ class cicBrowser_impl ~(history:MatitaTypes.mathViewer_entry MatitaMisc.history)
   let dir_RE = Pcre.regexp "^cic:((/([^/]+/)*[^/]+(/)?)|/|)$" in
   let is_uri txt = Pcre.pmatch ~rex:uri_RE txt in
   let is_dir txt = Pcre.pmatch ~rex:dir_RE txt in
-  let gui = MatitaMisc.get_gui () in
+  let _ = MatitaMisc.get_gui () in
   let win = new MatitaGeneratedGui.browserWin () in
   let _ = win#browserUri#misc#grab_focus () in
   let gviz = LablGraphviz.graphviz ~packing:win#graphScrolledWin#add () in
-  let searchText = 
+  let searchText =
     GSourceView2.source_view ~auto_indent:false ~editable:false ()
   in
   let _ =
      win#scrolledwinContent#add (searchText :> GObj.widget);
-     let callback () = 
+     let callback () =
        let text = win#entrySearch#text in
        let highlight start end_ =
          searchText#source_buffer#move_mark `INSERT ~where:start;
@@ -260,7 +260,7 @@ class cicBrowser_impl ~(history:MatitaTypes.mathViewer_entry MatitaMisc.history)
        in
        let iter = searchText#source_buffer#get_iter `SEL_BOUND in
        match iter#forward_search text with
-       | None -> 
+       | None ->
            (match searchText#source_buffer#start_iter#forward_search text with
            | None -> ()
            | Some (start,end_) -> highlight start end_)
@@ -271,9 +271,9 @@ class cicBrowser_impl ~(history:MatitaTypes.mathViewer_entry MatitaMisc.history)
   in
   let toplevel = win#toplevel in
   let mathView = cicMathView ~packing:win#scrolledBrowser#add () in
-  let fail message = 
-    MatitaGtkMisc.report_error ~title:"Cic browser" ~message 
-      ~parent:toplevel ()  
+  let fail message =
+    MatitaGtkMisc.report_error ~title:"Cic browser" ~message
+      ~parent:toplevel ()
   in
   let tags =
     [ "dir", GdkPixbuf.from_file (MatitaMisc.image_path "matita-folder.png");
@@ -297,11 +297,11 @@ class cicBrowser_impl ~(history:MatitaTypes.mathViewer_entry MatitaMisc.history)
       let filename, oc = Filename.open_temp_file "matita" ".dot" in
       let fmt = Format.formatter_of_out_channel oc in
       let status = (get_matita_script_current ())#status in
-      Pp.header 
+      Pp.header
         ~name:"Hints"
         ~graph_type:"graph"
         ~graph_attrs:["overlap", "false"]
-        ~node_attrs:["fontsize", "9"; "width", ".4"; 
+        ~node_attrs:["fontsize", "9"; "width", ".4";
             "height", ".4"; "shape", "box"]
         ~edge_attrs:["fontsize", "10"; "len", "2"] fmt;
       NCicUnifHint.generate_dot_file status fmt;
@@ -311,11 +311,11 @@ class cicBrowser_impl ~(history:MatitaTypes.mathViewer_entry MatitaMisc.history)
       gviz#load_graph_from_file ~gviz_cmd:"neato -Tpng" filename;
       (*HExtlib.safe_remove filename*)
   in
-  let load_coerchgraph tred () = 
+  let load_coerchgraph tred () =
       let module Pp = GraphvizPp.Dot in
       let filename, oc = Filename.open_temp_file "matita" ".dot" in
       let fmt = Format.formatter_of_out_channel oc in
-      Pp.header 
+      Pp.header
         ~name:"Coercions"
         ~node_attrs:["fontsize", "9"; "width", ".4"; "height", ".4"]
         ~edge_attrs:["fontsize", "10"] fmt;
@@ -325,10 +325,10 @@ class cicBrowser_impl ~(history:MatitaTypes.mathViewer_entry MatitaMisc.history)
       Pp.raw "@." fmt;
       close_out oc;
       if tred then
-        gviz#load_graph_from_file 
+        gviz#load_graph_from_file
           ~gviz_cmd:"dot -Txdot | tred |gvpack -gv | dot" filename
       else
-        gviz#load_graph_from_file 
+        gviz#load_graph_from_file
           ~gviz_cmd:"dot -Txdot | gvpack -gv | dot" filename;
       HExtlib.safe_remove filename
   in
@@ -356,7 +356,7 @@ class cicBrowser_impl ~(history:MatitaTypes.mathViewer_entry MatitaMisc.history)
         let my_id = Oo.id self in
         cicBrowsers := List.filter (fun b -> Oo.id b <> my_id) !cicBrowsers;
         false));
-      ignore(win#whelpResultTreeview#connect#row_activated 
+      ignore(win#whelpResultTreeview#connect#row_activated
         ~callback:(fun _ _ ->
           handle_error (fun () -> self#loadInput (self#_getSelectedUri ()))));
       mathView#set_href_callback (Some (fun uri ->
@@ -382,7 +382,7 @@ class cicBrowser_impl ~(history:MatitaTypes.mathViewer_entry MatitaMisc.history)
       self#_load (`About `Blank);
       toplevel#show ()
 
-    val mutable current_entry = `About `Blank 
+    val mutable current_entry = `About `Blank
 
       (** @return None if no object uri can be built from the current entry *)
     method private currentCicUri =
@@ -404,13 +404,13 @@ class cicBrowser_impl ~(history:MatitaTypes.mathViewer_entry MatitaMisc.history)
       | [sel] -> lastDir ^ sel
       | _ -> assert false
 
-    (** history RATIONALE 
+    (** history RATIONALE
      *
      * All operations about history are done using _historyFoo.
      * Only toplevel functions (ATM load and loadInput) call _historyAdd.
      *)
-          
-    method private _historyAdd item = 
+
+    method private _historyAdd item =
       history#add item;
       win#browserBackButton#misc#set_sensitive true;
       win#browserForwardButton#misc#set_sensitive false
@@ -420,15 +420,15 @@ class cicBrowser_impl ~(history:MatitaTypes.mathViewer_entry MatitaMisc.history)
       if history#is_begin then win#browserBackButton#misc#set_sensitive false;
       win#browserForwardButton#misc#set_sensitive true;
       item
-    
+
     method private _historyNext () =
       let item = history#next in
       if history#is_end then win#browserForwardButton#misc#set_sensitive false;
       win#browserBackButton#misc#set_sensitive true;
       item
 
-    (** notebook RATIONALE 
-     * 
+    (** notebook RATIONALE
+     *
      * Use only these functions to switch between the tabs
      *)
     method private _showMath = win#mathOrListNotebook#goto_page   0
@@ -462,9 +462,9 @@ class cicBrowser_impl ~(history:MatitaTypes.mathViewer_entry MatitaMisc.history)
           | `About `Coercions -> self#coerchgraph true ()
           | `About `Hints -> self#hints ()
           | `About `TeX -> self#tex ()
-          | `About `Grammar -> self#grammar () 
+          | `About `Grammar -> self#grammar ()
           | `Check term -> self#_loadCheck term
-          | `NCic (term, ctx, metasenv, subst) -> 
+          | `NCic (term, ctx, metasenv, subst) ->
                self#_loadTermNCic term metasenv subst ctx
           | `Dir dir -> self#_loadDir dir
           | `NRef nref -> self#_loadNReference nref);
@@ -486,7 +486,7 @@ class cicBrowser_impl ~(history:MatitaTypes.mathViewer_entry MatitaMisc.history)
     method private redraw_gviz ?center_on () =
       if Sys.command "which dot" = 0 then
        let tmpfile, oc = Filename.open_temp_file "matita" ".dot" in
-       let fmt = Format.formatter_of_out_channel oc in
+       let _ = Format.formatter_of_out_channel oc in
        (* MATITA 1.0 MetadataDeps.DepGraph.render fmt gviz_graph;*)
        close_out oc;
        gviz#load_graph_from_file ~gviz_cmd:"tred | dot" tmpfile;
@@ -522,30 +522,30 @@ class cicBrowser_impl ~(history:MatitaTypes.mathViewer_entry MatitaMisc.history)
     method private tex () =
       let b = Buffer.create 1000 in
       Printf.bprintf b "UTF-8 equivalence classes (rotate with ALT-L):\n\n";
-      List.iter 
+      List.iter
         (fun l ->
            List.iter (fun sym ->
-             Printf.bprintf b "  %s" (Glib.Utf8.from_unichar sym) 
+             Printf.bprintf b "  %s" (Glib.Utf8.from_unichar sym)
            ) l;
            Printf.bprintf b "\n";
         )
-        (List.sort 
+        (List.sort
           (fun l1 l2 -> compare (List.hd l1) (List.hd l2))
           (Virtuals.get_all_eqclass ()));
       Printf.bprintf b "\n\nVirtual keys (trigger with ALT-L):\n\n";
-      List.iter 
-        (fun tag, items -> 
+      List.iter
+        (fun tag, items ->
            Printf.bprintf b "  %s:\n" tag;
-           List.iter 
+           List.iter
              (fun names, symbol ->
-                Printf.bprintf b "  \t%s\t%s\n" 
+                Printf.bprintf b "  \t%s\t%s\n"
                   (Glib.Utf8.from_unichar symbol)
                   (String.concat ", " names))
-             (List.sort 
+             (List.sort
                (fun (_,a) (_,b) -> compare a b)
                items);
            Printf.bprintf b "\n")
-        (List.sort 
+        (List.sort
           (fun (a,_) (b,_) -> compare a b)
           (Virtuals.get_all_virtuals ()));
       self#_loadText (Buffer.contents b)
@@ -571,13 +571,13 @@ class cicBrowser_impl ~(history:MatitaTypes.mathViewer_entry MatitaMisc.history)
       let obj = NCicEnvironment.get_checked_obj status uri in
       self#_loadNObj status obj
 
-    method private _loadDir dir = 
+    method private _loadDir dir =
       let content = Http_getter.ls ~local:false dir in
       let l =
         List.fast_sort
           Pervasives.compare
           (List.map
-            (function 
+            (function
               | Http_getter_types.Ls_section s -> "dir", s
               | Http_getter_types.Ls_object o -> "obj", o.Http_getter_types.uri)
             content)
@@ -609,7 +609,7 @@ class cicBrowser_impl ~(history:MatitaTypes.mathViewer_entry MatitaMisc.history)
       self#_showList
 
     (** { public methods, all must call _load!! } *)
-      
+
     method load entry =
       handle_error (fun () -> self#_load entry; self#_historyAdd entry)
 
@@ -645,7 +645,7 @@ class cicBrowser_impl ~(history:MatitaTypes.mathViewer_entry MatitaMisc.history)
     method refresh ~force () = self#_load ~force current_entry
 
   end
-  
+
 let sequentsViewer ~(notebook:GPack.notebook) ~(cicMathView:cicMathView) ():
   MatitaGuiTypes.sequentsViewer
 =
@@ -674,7 +674,7 @@ let new_cicBrowser () =
   let history = new MatitaMisc.browser_history ~memento:None size (`About `Blank) in
   aux history
 
-(** @param reuse if set reused last opened cic browser otherwise 
+(** @param reuse if set reused last opened cic browser otherwise
 *  opens a new one. default is false *)
 let cicBrowser ?(reuse=false) t =
  let browser =
@@ -747,4 +747,3 @@ let paste_clipboard paste_kind =
   | None -> failwith "empty clipboard"
   | Some cb ->
       (try List.assoc paste_kind cb with Not_found -> assert false)
-

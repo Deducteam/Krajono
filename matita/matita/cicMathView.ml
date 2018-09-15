@@ -1,14 +1,14 @@
 (* Copyright (C) 2004-2005, HELM Team.
- * 
+ *
  * This file is part of HELM, an Hypertextual, Electronic
  * Library of Mathematics, developed at the Computer Science
  * Department, University of Bologna, Italy.
- * 
+ *
  * HELM is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License
  * as published by the Free Software Foundation; either version 2
  * of the License, or (at your option) any later version.
- * 
+ *
  * HELM is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
@@ -18,7 +18,7 @@
  * along with HELM; if not, write to the Free Software
  * Foundation, Inc., 59 Temple Place - Suite 330, Boston,
  * MA  02111-1307, USA.
- * 
+ *
  * For details, see the HELM World-Wide-Web page,
  * http://helm.cs.unibo.it/
  *)
@@ -73,14 +73,14 @@ let empty_mathml = lazy ([],"")
 let closed_goal_mathml = lazy ([],"chiuso per side effect...")
 
 (*
-let rec has_maction (elt :Gdome.element) = 
+let rec has_maction (elt :Gdome.element) =
   (* fix this comparison *)
   if elt#get_tagName#to_string = "m:maction" ||
    elt#get_tagName#to_string = "b:action" then
     true
-  else 
+  else
     match elt#get_parentNode with
-    | Some node when node#get_nodeType = GdomeNodeTypeT.ELEMENT_NODE -> 
+    | Some node when node#get_nodeType = GdomeNodeTypeT.ELEMENT_NODE ->
         has_maction (new Gdome.element_of_node node)
     | _ -> false
 ;;
@@ -174,7 +174,7 @@ let string_of_dom_node node =
 *)
 
 class clickableMathView obj =
-let text_width = 80 in
+let _ = 80 in
 object (self)
   inherit GSourceView2.source_view obj
 
@@ -199,7 +199,7 @@ object (self)
     ignore(all_tag#connect#event
       ~callback:(fun ~origin event pos ->
         match GdkEvent.get_type event with
-         | `MOTION_NOTIFY -> 
+         | `MOTION_NOTIFY ->
              Gdk.Window.set_cursor
               (match self#get_window `TEXT with None -> assert false | Some x -> x)
               (Gdk.Cursor.create `ARROW);
@@ -220,12 +220,12 @@ object (self)
            Not_found -> assert false
          in
          match GdkEvent.get_type event with
-            `BUTTON_PRESS -> 
+            `BUTTON_PRESS ->
               (match href_callback with
                   None -> ()
                 | Some f -> f href);
               true
-          | `MOTION_NOTIFY -> 
+          | `MOTION_NOTIFY ->
               Gdk.Window.set_cursor
                (match self#get_window `TEXT with None -> assert false | Some x -> x)
                (Gdk.Cursor.create `HAND1);
@@ -312,10 +312,10 @@ object (self)
       button_press_y <- GdkEvent.Button.y gdk_button;
       selection_changed <- false
     end else if button = MatitaMisc.right_button then
-      self#popup_contextual_menu 
-        (self#get_element_at 
-          (int_of_float (GdkEvent.Button.x gdk_button)) 
-          (int_of_float (GdkEvent.Button.y gdk_button)))  
+      self#popup_contextual_menu
+        (self#get_element_at
+          (int_of_float (GdkEvent.Button.x gdk_button))
+          (int_of_float (GdkEvent.Button.y gdk_button)))
         (GdkEvent.Button.time gdk_button);
     false
 
@@ -392,12 +392,12 @@ object (self)
     let normalize = add_menu_item ~menu:reductions ~label:"Normalize" () in
     let simplify = add_menu_item ~menu:reductions ~label:"Simplify" () in
     let whd = add_menu_item ~menu:reductions ~label:"Weak head" () in
-    (match element with 
+    (match element with
     | None -> hyperlinks_menu_item#misc#set_sensitive false
-    | Some elt -> 
+    | Some elt ->
         match hrefs_of_elt elt, href_callback with
         | Some l, Some f ->
-            List.iter 
+            List.iter
               (fun h ->
                 let item = add_menu_item ~menu:hyperlinks ~label:h () in
                 connect_menu_item item (fun () -> f h)) l
@@ -463,7 +463,7 @@ object (self)
                 (fun uri ->
                   let menu_item =
                     GMenu.menu_item ~label:uri ~packing:menu#append () in
-                  connect_menu_item menu_item 
+                  connect_menu_item menu_item
                   (fun () -> try f uri with Not_found -> assert false))
                 uris;
               menu#popup ~button ~time)
@@ -526,7 +526,7 @@ object (self)
         let context' = MatitaMisc.list_tl_at hyp context in
         SelHyp (name_of_hypothesis hyp, context')
       with Not_found -> assert false
-    
+
   method private find_obj_conclusion id =
     match self#cic_info with
     | None
@@ -690,37 +690,37 @@ let cicMathView (*?auto_indent ?highlight_current_line ?indent_on_tab ?indent_wi
         Gobject.set_params (Gobject.try_cast obj "GtkSourceView") pl;
         new _cicMathView obj)(*)) ?auto_indent ?highlight_current_line ?indent_on_tab ?indent_width ?insert_spaces_instead_of_tabs ?right_margin_position ?show_line_marks ?show_line_numbers ?show_right_margin ?smart_home_end ?tab_width ?editable ?cursor_visible ?justification ?wrap_mode ?accepts_tab ?border_width*) [] ?width ?height ?packing ?show () :> cicMathView)
 
-let screenshot status sequents metasenv subst (filename as ofn) =
+let screenshot status sequents metasenv subst _ =
  () (*MATITA 1.0
   let w = GWindow.window ~title:"screenshot" () in
   let width = 500 in
   let height = 2000 in
-  let m = GMathView.math_view 
+  let m = GMathView.math_view
      ~font_size:(MatitaMisc.get_current_font_size ()) ~width ~height
      ~packing:w#add
      ~show:true ()
   in
   w#show ();
-  let filenames = 
+  let filenames =
    HExtlib.list_mapi
     (fun (mno,_ as sequent) i ->
-       let mathml = 
-         ApplyTransformation.nmml_of_cic_sequent 
+       let mathml =
+         ApplyTransformation.nmml_of_cic_sequent
            status metasenv subst sequent
        in
        m#load_root ~root:mathml#get_documentElement;
        let pixmap = m#get_buffer in
        let pixbuf = GdkPixbuf.create ~width ~height () in
        GdkPixbuf.get_from_drawable ~dest:pixbuf pixmap;
-       let filename = 
-         filename ^ "-raw" ^ string_of_int i ^ ".png" 
+       let filename =
+         filename ^ "-raw" ^ string_of_int i ^ ".png"
        in
        GdkPixbuf.save ~filename ~typ:"png" pixbuf;
        filename,mno)
     sequents
   in
-  let items = 
-    List.map (fun (x,mno) -> 
+  let items =
+    List.map (fun (x,mno) ->
       ignore(Sys.command
         (Printf.sprintf
          ("convert "^^
@@ -733,20 +733,20 @@ let screenshot status sequents metasenv subst (filename as ofn) =
         x ^ ".label.png")
     filenames
   in
-  let rec div2 = function 
+  let rec div2 = function
     | [] -> []
     | [x] -> [[x]]
     | x::y::tl -> [x;y] :: div2 tl
   in
   let items = div2 items in
-  ignore(Sys.command (Printf.sprintf 
-    "convert %s -append  %s" 
+  ignore(Sys.command (Printf.sprintf
+    "convert %s -append  %s"
      (String.concat ""
        (List.map (fun items ->
          Printf.sprintf " '(' %s +append ')' "
-           (String.concat 
+           (String.concat
               (" '(' -gravity center -size 10x10 xc: ')' ") items)) items))
-    (Filename.quote (ofn ^ ".png")))); 
+    (Filename.quote (ofn ^ ".png"))));
   List.iter (fun x,_ -> Sys.remove x) filenames;
   List.iter Sys.remove (List.flatten items);
   w#destroy ()*)

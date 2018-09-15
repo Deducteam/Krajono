@@ -42,7 +42,7 @@ let empty_lexbuf = {
 let create f = {
   empty_lexbuf with
     refill = f;
-    buf = Array.create chunk_size 0;
+    buf = Array.make chunk_size 0;
 }
 
 let from_stream s =
@@ -66,7 +66,7 @@ exception MalFormed
 
 let from_var_enc_stream enc s =
   create (fun buf pos len ->
-	    try 
+	    try
 	      buf.(pos) <- (match !enc with
 			      | Ascii ->
 				  let c = Char.code (Stream.next s) in
@@ -84,7 +84,7 @@ let from_var_enc_string enc s =
 let from_var_enc_channel enc ic =
   from_var_enc_stream enc (Stream.of_channel ic)
 
-let from_latin1_string s = 
+let from_latin1_string s =
   let len = String.length s in
   {
     empty_lexbuf with
@@ -112,7 +112,7 @@ let from_utf8_string s =
   from_int_array (Utf8.to_int_array s 0 (String.length s))
 
 let refill lexbuf =
-  if lexbuf.len + chunk_size > Array.length lexbuf.buf 
+  if lexbuf.len + chunk_size > Array.length lexbuf.buf
   then begin
     let s = lexbuf.start in
     let ls = lexbuf.len - s in
@@ -120,7 +120,7 @@ let refill lexbuf =
       Array.blit lexbuf.buf s lexbuf.buf 0 ls
     else begin
       let newlen = (Array.length lexbuf.buf + chunk_size) * 2 in
-      let newbuf = Array.create newlen 0 in
+      let newbuf = Array.make newlen 0 in
       Array.blit lexbuf.buf s newbuf 0 ls;
       lexbuf.buf <- newbuf
     end;
@@ -131,7 +131,7 @@ let refill lexbuf =
     lexbuf.start <- 0
   end;
   let n = lexbuf.refill lexbuf.buf lexbuf.pos chunk_size in
-  if (n = 0) 
+  if (n = 0)
   then begin
     lexbuf.buf.(lexbuf.len) <- eof;
     lexbuf.len <- lexbuf.len + 1;
@@ -139,8 +139,8 @@ let refill lexbuf =
   else lexbuf.len <- lexbuf.len + n
 
 let next lexbuf =
-  let i = 
-    if lexbuf.pos = lexbuf.len then 
+  let i =
+    if lexbuf.pos = lexbuf.len then
       if lexbuf.finished then eof
       else (refill lexbuf; lexbuf.buf.(lexbuf.pos))
     else lexbuf.buf.(lexbuf.pos)
@@ -171,33 +171,32 @@ let loc lexbuf = (lexbuf.start + lexbuf.offset, lexbuf.pos + lexbuf.offset)
 
 let lexeme_length lexbuf = lexbuf.pos - lexbuf.start
 
-let sub_lexeme lexbuf pos len = 
+let sub_lexeme lexbuf pos len =
   Array.sub lexbuf.buf (lexbuf.start + pos) len
-let lexeme lexbuf = 
+let lexeme lexbuf =
   Array.sub lexbuf.buf (lexbuf.start) (lexbuf.pos - lexbuf.start)
-let lexeme_char lexbuf pos = 
+let lexeme_char lexbuf pos =
   lexbuf.buf.(lexbuf.start + pos)
 
 let to_latin1 c =
-  if (c >= 0) && (c < 256) 
-  then Char.chr c 
+  if (c >= 0) && (c < 256)
+  then Char.chr c
   else raise (InvalidCodepoint c)
 
-let latin1_lexeme_char lexbuf pos = 
+let latin1_lexeme_char lexbuf pos =
   to_latin1 (lexeme_char lexbuf pos)
 
 let latin1_sub_lexeme lexbuf pos len =
-  let s = String.create len in
-  for i = 0 to len - 1 do s.[i] <- to_latin1 lexbuf.buf.(lexbuf.start + pos + i) done;
+  let s = Bytes.create len in
+  for i = 0 to len - 1 do
+    Bytes.set s i (to_latin1 lexbuf.buf.(lexbuf.start + pos + i)) done;
   s
 
-let latin1_lexeme lexbuf = 
+let latin1_lexeme lexbuf =
   latin1_sub_lexeme lexbuf 0 (lexbuf.pos - lexbuf.start)
 
 let utf8_sub_lexeme lexbuf pos len =
   Utf8.from_int_array lexbuf.buf (lexbuf.start + pos) len
 
-let utf8_lexeme lexbuf = 
+let utf8_lexeme lexbuf =
   utf8_sub_lexeme lexbuf 0 (lexbuf.pos - lexbuf.start)
-
-

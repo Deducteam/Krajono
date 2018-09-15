@@ -1,14 +1,14 @@
 (* Copyright (C) 2004-2005, HELM Team.
- * 
+ *
  * This file is part of HELM, an Hypertextual, Electronic
  * Library of Mathematics, developed at the Computer Science
  * Department, University of Bologna, Italy.
- * 
+ *
  * HELM is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License
  * as published by the Free Software Foundation; either version 2
  * of the License, or (at your option) any later version.
- * 
+ *
  * HELM is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
@@ -18,7 +18,7 @@
  * along with HELM; if not, write to the Free Software
  * Foundation, Inc., 59 Temple Place - Suite 330, Boston,
  * MA  02111-1307, USA.
- * 
+ *
  * For details, see the HELM World-Wide-Web page,
  * http://helm.cs.unibo.it/
  *)
@@ -47,7 +47,7 @@ let only_dust_RE = Pcre.regexp "^(\\s|\n|%%[^\n]*\n)*$"
 let multiline_RE = Pcre.regexp "^\n[^\n]+$"
 let newline_RE = Pcre.regexp "\n"
 let comment_RE = Pcre.regexp "\\(\\*(.|\n)*\\*\\)\n?" ~flags:[`UNGREEDY]
- 
+
 let comment str =
   if Pcre.pmatch ~rex:multiline_RE str then
     "\n(** " ^ (Pcre.replace ~rex:newline_RE str) ^ " *)"
@@ -57,7 +57,7 @@ let comment str =
 let strip_comments str =
   Pcre.qreplace ~templ:"\n" ~pat:"\n\n" (Pcre.qreplace ~rex:comment_RE str)
 ;;
-                     
+
 let first_line s =
   let s = Pcre.replace ~rex:heading_nl_RE s in
   try
@@ -68,7 +68,7 @@ let first_line s =
 let eval_with_engine include_paths status skipped_txt nonskipped_txt st
 =
   let parsed_text_length =
-    String.length skipped_txt + String.length nonskipped_txt 
+    String.length skipped_txt + String.length nonskipped_txt
   in
   let text = skipped_txt ^ nonskipped_txt in
   let prefix_len = MatitaGtkMisc.utf8_string_length skipped_txt in
@@ -79,8 +79,8 @@ let eval_with_engine include_paths status skipped_txt nonskipped_txt st
   in
   let enriched_history_fragment = List.rev enriched_history_fragment in
   (* really fragile *)
-  let res,_ = 
-    List.fold_left 
+  let res,_ =
+    List.fold_left
       (fun (acc, to_prepend) (status,alias) ->
        match alias with
        | None -> (status,to_prepend ^ nonskipped_txt)::acc,""
@@ -92,25 +92,25 @@ let eval_with_engine include_paths status skipped_txt nonskipped_txt st
   res,"",parsed_text_length
 ;;
 
-let pp_eager_statement_ast = GrafiteAstPp.pp_statement 
+let pp_eager_statement_ast = GrafiteAstPp.pp_statement
 
 let eval_nmacro include_paths (buffer : GText.buffer) status unparsed_text parsed_text script mac =
   let parsed_text_length = String.length parsed_text in
   match mac with
-  | TA.Screenshot (_,name) -> 
+  | TA.Screenshot (_,name) ->
        let status = script#status in
        let _,_,menv,subst,_ = status#obj in
        let name = Filename.dirname (script#filename) ^ "/" ^ name in
-       let sequents = 
+       let sequents =
          let selected = Continuationals.Stack.head_goals status#stack in
-         List.filter (fun x,_ -> List.mem x selected) menv         
+         List.filter (fun x,_ -> List.mem x selected) menv
        in
        CicMathView.screenshot status sequents menv subst name;
        [status, parsed_text], "", parsed_text_length
   | TA.NCheck (_,t) ->
       let status = script#status in
       let _,_,menv,subst,_ = status#obj in
-      let ctx = 
+      let ctx =
        match Continuationals.Stack.head_goals status#stack with
           [] -> []
         | g::tl ->
@@ -119,15 +119,15 @@ let eval_nmacro include_paths (buffer : GText.buffer) status unparsed_text parse
              "Many goals focused. Using the context of the first one\n";
            let ctx = try
              let _, ctx, _ = NCicUtils.lookup_meta g menv in ctx
-             with NCicUtils.Meta_not_found _ -> 
+             with NCicUtils.Meta_not_found _ ->
                HLog.warn "Current goal is closed. Using empty context.";
                [ ]
            in ctx
       in
-      let m, s, status, t = 
-        GrafiteDisambiguate.disambiguate_nterm 
+      let m, s, status, t =
+        GrafiteDisambiguate.disambiguate_nterm
           status `XTNone ctx menv subst (parsed_text,parsed_text_length,
-            NotationPt.Cast (t,NotationPt.Implicit `JustOne))  
+            NotationPt.Cast (t,NotationPt.Implicit `JustOne))
           (* XXX use the metasenv, if possible *)
       in
       MatitaMathView.cicBrowser (Some (`NCic (t,ctx,m,s)));
@@ -138,26 +138,26 @@ let eval_nmacro include_paths (buffer : GText.buffer) status unparsed_text parse
       let rex = Pcre.regexp ~flags:[`MULTILINE] "\\A([\\n\\t\\r ]*).*\\Z" in
       let nl = Pcre.replace ~rex ~templ:"$1" parsed_text in
       [s, nl ^ "#" ^ String.concat " #" !names_ref], "", parsed_text_length
-  | TA.NAutoInteractive (_loc, (None,a)) -> 
+  | TA.NAutoInteractive (_loc, (None,a)) ->
       let trace_ref = ref [] in
       let s = NnAuto.auto_tac ~params:(None,a) ~trace_ref script#status in
-      let depth = 
+      let depth =
         try List.assoc "depth" a
         with Not_found -> ""
       in
-      let width = 
+      let width =
         try List.assoc "width" a
         with Not_found -> ""
       in
       let trace = "/"^(if int_of_string depth > 1 then depth ^ " width=" ^ width else "")^" by " in
-      let thms = 
+      let thms =
         match !trace_ref with
         | [] -> ""
-        | thms -> 
-           String.concat ", "  
-             (HExtlib.filter_map (function 
-               | NotationPt.NRef r -> Some (NCicPp.r2s status true r) 
-               | _ -> None) 
+        | thms ->
+           String.concat ", "
+             (HExtlib.filter_map (function
+               | NotationPt.NRef r -> Some (NCicPp.r2s status true r)
+               | _ -> None)
              thms)
       in
       let rex = Pcre.regexp ~flags:[`MULTILINE] "\\A([\\n\\t\\r ]*).*\\Z" in
@@ -195,15 +195,15 @@ and eval_statement include_paths (buffer : GText.buffer) status script
          ast, text
     | `Ast (st, text) -> st, text
   in
-  let text_of_loc floc = 
+  let text_of_loc floc =
     let nonskipped_txt,_ = MatitaGtkMisc.utf8_parsed_text unparsed_text floc in
-    let start, stop = HExtlib.loc_of_floc floc in 
+    let start, stop = HExtlib.loc_of_floc floc in
     let floc = HExtlib.floc_of_loc (0, start) in
     let skipped_txt,_ = MatitaGtkMisc.utf8_parsed_text unparsed_text floc in
     let floc = HExtlib.floc_of_loc (0, stop) in
     let txt,len = MatitaGtkMisc.utf8_parsed_text unparsed_text floc in
     txt,nonskipped_txt,skipped_txt,len
-  in 
+  in
   match st with
   | GrafiteAst.Executable (loc, ex) ->
      let _, nonskipped, skipped, parsed_text_length = text_of_loc loc in
@@ -214,16 +214,16 @@ and eval_statement include_paths (buffer : GText.buffer) status script
      let _, nonskipped, skipped, parsed_text_length = text_of_loc loc in
       eval_executable include_paths buffer status unparsed_text
        skipped nonskipped script ex loc
-  | GrafiteAst.Comment (loc, _) -> 
+  | GrafiteAst.Comment (loc, _) ->
       let parsed_text, _, _, parsed_text_length = text_of_loc loc in
       let remain_len = String.length unparsed_text - parsed_text_length in
       let s = String.sub unparsed_text parsed_text_length remain_len in
-      let s,text,len = 
+      let s,text,len =
        try
         eval_statement include_paths buffer status script (`Raw s)
        with
           HExtlib.Localized (floc, exn) ->
-           HExtlib.raise_localized_exception 
+           HExtlib.raise_localized_exception
              ~offset:(MatitaGtkMisc.utf8_string_length parsed_text) floc exn
         | MultiPassDisambiguator.DisambiguationError (offset,errorll) ->
            raise
@@ -235,7 +235,7 @@ and eval_statement include_paths (buffer : GText.buffer) status script
       | (statuses,text)::tl ->
          (statuses,parsed_text ^ text)::tl,"",parsed_text_length + len
       | [] -> [], "", 0)
-  
+
 let fresh_script_id =
   let i = ref 0 in
   fun () -> incr i; !i
@@ -290,38 +290,38 @@ object (self)
   method has_name = filename_ <> None
 
   method source_view = source_view
-  
+
   method include_paths =
-    include_paths_ @ 
+    include_paths_ @
     Helm_registry.get_list Helm_registry.string "matita.includes"
 
   method private curdir =
     try
-     let root, _buri, _fname, _tgt = 
+     let root, _buri, _fname, _tgt =
       Librarian.baseuri_of_script ~include_paths:self#include_paths
-       self#filename 
-     in 
+       self#filename
+     in
      root
     with Librarian.NoRootFor _ -> Sys.getcwd ()
 
   method buri_of_current_file =
     match filename_ with
-    | None -> default_buri 
+    | None -> default_buri
     | Some f ->
-        try 
-          let _root, buri, _fname, _tgt = 
-            Librarian.baseuri_of_script ~include_paths:self#include_paths f 
-          in 
+        try
+          let _root, buri, _fname, _tgt =
+            Librarian.baseuri_of_script ~include_paths:self#include_paths f
+          in
           buri
         with Librarian.NoRootFor _ | Librarian.FileNotFound _ -> default_buri
 
   method filename = match filename_ with None -> default_fname | Some f -> f
 
-  initializer 
+  initializer
     ignore
      (source_view#source_buffer#begin_not_undoable_action ();
-      self#reset (); 
-      self#template (); 
+      self#reset ();
+      self#template ();
       source_view#source_buffer#end_not_undoable_action ());
     MatitaMisc.observe_font_size (fun font_size ->
      source_view#misc#modify_font_by_name
@@ -330,11 +330,11 @@ object (self)
     ignore(source_view#source_buffer#set_language
      (Some MatitaGtkMisc.matita_lang));
     ignore(source_view#source_buffer#set_highlight_syntax true);
-    ignore(source_view#connect#after#paste_clipboard 
+    ignore(source_view#connect#after#paste_clipboard
         ~callback:(fun () -> self#clean_dirty_lock));
-    ignore (GMain.Timeout.add ~ms:300000 
+    ignore (GMain.Timeout.add ~ms:300000
        ~callback:(fun _ -> self#_saveToBackupFile ();true));
-    ignore (buffer#connect#modified_changed 
+    ignore (buffer#connect#modified_changed
       (fun _ -> self#set_star buffer#modified));
     (* clean_locked is set to true only "during" a PRIMARY paste
        operation (i.e. by clicking with the second mouse button) *)
@@ -359,9 +359,9 @@ object (self)
           self#clean_dirty_lock;
           clean_locked := true
          end));
-    ignore(source_view#source_buffer#connect#after#insert_text 
-     ~callback:(fun iter str -> 
-        if (MatitaMisc.get_gui ())#main#menuitemAutoAltL#active && (str = " " || str = "\n") then 
+    ignore(source_view#source_buffer#connect#after#insert_text
+     ~callback:(fun iter str ->
+        if (MatitaMisc.get_gui ())#main#menuitemAutoAltL#active && (str = " " || str = "\n") then
           ignore(self#expand_virtual_if_any iter str)));
     ignore(source_view#connect#after#populate_popup
      ~callback:(fun pre_menu ->
@@ -437,7 +437,7 @@ object (self)
   val error_tag = buffer#create_tag [`UNDERLINE `SINGLE; `FOREGROUND "red"]
 
   (** unicode handling *)
-  method nextSimilarSymbol = 
+  method nextSimilarSymbol =
     let write_similarsymbol s =
       let s = Glib.Utf8.from_unichar s in
       let iter = source_view#source_buffer#get_iter_at_mark `INSERT in
@@ -458,7 +458,7 @@ object (self)
     in
     if new_similarsymbol then
       (if not(self#expand_virtual_if_any (source_view#source_buffer#get_iter_at_mark `INSERT) "")then
-        let last_symbol = 
+        let last_symbol =
           let i = source_view#source_buffer#get_iter_at_mark `INSERT in
           Glib.Utf8.first_char (i#get_slice ~stop:(i#copy#backward_chars 1))
         in
@@ -466,30 +466,30 @@ object (self)
         | [] ->  ()
         | eqclass ->
             similarsymbols_orig <- eqclass;
-            let is_used = 
-              try Hashtbl.find similar_memory similarsymbols_orig  
-              with Not_found -> 
+            let is_used =
+              try Hashtbl.find similar_memory similarsymbols_orig
+              with Not_found ->
                 let is_used = List.map (fun x -> x,false) eqclass in
-                Hashtbl.add similar_memory eqclass is_used; 
+                Hashtbl.add similar_memory eqclass is_used;
                 is_used
             in
-            let hd, next, tl = 
-              let used, unused = 
-                List.partition (fun s -> List.assoc s is_used) eqclass 
+            let hd, next, tl =
+              let used, unused =
+                List.partition (fun s -> List.assoc s is_used) eqclass
               in
               match used @ unused with a::b::c -> a,b,c | _ -> assert false
             in
-            let hd, tl = 
+            let hd, tl =
               if hd = last_symbol then next, tl @ [hd] else hd, (next::tl)
             in
             old_used_memory <- List.assoc hd is_used;
-            let is_used = 
+            let is_used =
               (hd,true) :: List.filter (fun (x,_) -> x <> hd) is_used
             in
             Hashtbl.replace similar_memory similarsymbols_orig is_used;
             write_similarsymbol hd;
             similarsymbols <- tl @ [ hd ]))
-    else 
+    else
       match similarsymbols with
       | [] -> ()
       | hd :: tl ->
@@ -497,40 +497,40 @@ object (self)
           let last = HExtlib.list_last tl in
           let old_used_for_last = old_used_memory in
           old_used_memory <- List.assoc hd is_used;
-          let is_used = 
+          let is_used =
             (hd, true) :: (last,old_used_for_last) ::
-              List.filter (fun (x,_) -> x <> last && x <> hd) is_used 
+              List.filter (fun (x,_) -> x <> last && x <> hd) is_used
           in
           Hashtbl.replace similar_memory similarsymbols_orig is_used;
           similarsymbols <- tl @ [ hd ];
           write_similarsymbol hd
 
   method private reset_similarsymbols =
-   similarsymbols <- []; 
-   similarsymbols_orig <- []; 
+   similarsymbols <- [];
+   similarsymbols_orig <- [];
    try source_view#source_buffer#delete_mark similarsymbols_tag
    with GText.No_such_mark _ -> ()
- 
+
   method private expand_virtual_if_any iter tok =
     try
      let len = MatitaGtkMisc.utf8_string_length tok in
      let last_word =
       let prev = iter#copy#backward_chars len in
-       prev#get_slice ~stop:(prev#copy#backward_find_char 
+       prev#get_slice ~stop:(prev#copy#backward_find_char
         (fun x -> Glib.Unichar.isspace x || x = Glib.Utf8.first_char "\\"))
      in
      let inplaceof, symb = Virtuals.symbol_of_virtual last_word in
      self#reset_similarsymbols;
      let s = Glib.Utf8.from_unichar symb in
      assert(Glib.Utf8.validate s);
-     source_view#source_buffer#delete ~start:iter 
+     source_view#source_buffer#delete ~start:iter
        ~stop:(iter#copy#backward_chars
          (MatitaGtkMisc.utf8_string_length inplaceof + len));
      source_view#source_buffer#insert ~iter
        (if inplaceof.[0] = '\\' then s else (s ^ tok));
      true
     with Virtuals.Not_a_virtual -> false
-    
+
   (** selections / clipboards handling *)
 
   method markupSelected = MatitaMathView.has_selection ()
@@ -620,7 +620,7 @@ object (self)
         the text to redo is not locked *)
      source_view#source_buffer#redo ();
      source_view#misc#grab_focus ()
-   
+
 
   method copy () =
    if self#textSelected
@@ -659,7 +659,7 @@ object (self)
    if self#bos then LibraryClean.clean_baseuris [self#buri_of_current_file];
    HLog.debug ("evaluating: " ^ first_line s ^ " ...");
    let time1 = Unix.gettimeofday () in
-   let entries, newtext, parsed_len = 
+   let entries, newtext, parsed_len =
     try
      eval_statement self#include_paths buffer self#status self (`Raw s)
     with End_of_file -> raise Margin
@@ -697,10 +697,10 @@ object (self)
     try
       self#_advance ?statement ();
       self#notify
-    with 
+    with
     | Margin -> self#notify
     | Not_found -> assert false
-    | Invalid_argument "Array.make" -> HLog.error "The script is too big!\n"
+    | Invalid_argument _ -> HLog.error "The script is too big!\n"
     | exc -> self#notify; raise exc
 
   method retract () =
@@ -715,9 +715,9 @@ object (self)
       in
        self#_retract cmp status new_statements new_history;
        self#notify
-    with 
+    with
     | Margin -> self#notify
-    | Invalid_argument "Array.make" -> HLog.error "The script is too big!\n"
+    | Invalid_argument _ -> HLog.error "The script is too big!\n"
     | exc -> self#notify; raise exc
 
   method private getFuture =
@@ -732,33 +732,33 @@ object (self)
     let text = Pcre.replace ~pat:":=" ~templ:"\\def" text in
     let text = Pcre.replace ~pat:"->" ~templ:"\\to" text in
     let text = Pcre.replace ~pat:"=>" ~templ:"\\Rightarrow" text in
-    let text = 
-      Pcre.substitute_substrings 
-        ~subst:(fun str -> 
+    let text =
+      Pcre.substitute_substrings
+        ~subst:(fun str ->
            let pristine = Pcre.get_substring str 0 in
-           let input = 
+           let input =
              if pristine.[0] = ' ' then
-               String.sub pristine 1 (String.length pristine -1) 
-             else pristine 
+               String.sub pristine 1 (String.length pristine -1)
+             else pristine
            in
-           let input = 
+           let input =
              if input.[String.length input-1] = ' ' then
-               String.sub input 0 (String.length input -1) 
+               String.sub input 0 (String.length input -1)
              else input
            in
-           let before, after =  
-             if input = "\\forall" || 
-                input = "\\lambda" || 
-                input = "\\exists" then "","" else " ", " " 
+           let before, after =
+             if input = "\\forall" ||
+                input = "\\lambda" ||
+                input = "\\exists" then "","" else " ", " "
            in
-           try 
-             before ^ Glib.Utf8.from_unichar 
+           try
+             before ^ Glib.Utf8.from_unichar
                (snd (Virtuals.symbol_of_virtual input)) ^ after
-           with Virtuals.Not_a_virtual -> pristine) 
+           with Virtuals.Not_a_virtual -> pristine)
         ~pat:" ?\\\\[a-zA-Z]+ ?" text
     in
     buffer#insert ~iter:lock text
-      
+
   (** @param rel_offset relative offset from current position of locked_mark *)
   method private moveMark rel_offset =
     let mark = `MARK locked_mark in
@@ -826,7 +826,7 @@ object (self)
    tab_label#set_text ((if b then "*" else "")^Filename.basename self#filename);
    tab_label#misc#set_tooltip_text
     ("URI: " ^ self#buri_of_current_file ^ "\nPATH: " ^ self#filename);
-    
+
   method saveToFile () =
     if self#has_name then
       let oc = open_out self#filename in
@@ -837,7 +837,7 @@ object (self)
       buffer#set_modified false
     else
       HLog.error "Can't save, no filename selected"
-  
+
   method private _saveToBackupFile () =
     if buffer#modified then
       begin
@@ -848,8 +848,8 @@ object (self)
         close_out oc;
         HLog.debug ("backup " ^ f ^ " saved")
       end
-  
-  method private reset_buffer = 
+
+  method private reset_buffer =
     statements <- [];
     history <- [ initial_statuses (Some self#status) self#buri_of_current_file ];
     self#notify;
@@ -862,29 +862,29 @@ object (self)
     buffer#delete ~start:buffer#start_iter ~stop:buffer#end_iter;
     source_buffer#end_not_undoable_action ();
     buffer#set_modified false;
-  
+
   method template () =
-    let template = HExtlib.input_file BuildTimeConf.script_template in 
+    let template = HExtlib.input_file BuildTimeConf.script_template in
     buffer#insert ~iter:(buffer#get_iter `START) template;
     buffer#set_modified false;
     self#set_star false;
 
   method goto (pos: [`Top | `Bottom | `Cursor]) () =
-  try  
+  try
     let old_locked_mark =
      `MARK
        (buffer#create_mark ~name:"old_locked_mark"
          ~left_gravity:true (buffer#get_iter_at_mark (`MARK locked_mark))) in
-    let getpos _ = buffer#get_iter_at_mark (`MARK locked_mark) in 
-    let getoldpos _ = buffer#get_iter_at_mark old_locked_mark in 
+    let getpos _ = buffer#get_iter_at_mark (`MARK locked_mark) in
+    let getoldpos _ = buffer#get_iter_at_mark old_locked_mark in
     let dispose_old_locked_mark () = buffer#delete_mark old_locked_mark in
     match pos with
-    | `Top -> 
-        dispose_old_locked_mark (); 
+    | `Top ->
+        dispose_old_locked_mark ();
         self#reset_buffer;
         self#notify
     | `Bottom ->
-        (try 
+        (try
           let rec dowhile () =
             self#_advance ();
             let newpos = getpos () in
@@ -896,8 +896,8 @@ object (self)
           in
           dowhile ();
           dispose_old_locked_mark ();
-          self#notify 
-        with 
+          self#notify
+        with
         | Margin -> dispose_old_locked_mark (); self#notify
         | exc -> dispose_old_locked_mark (); self#notify; raise exc)
     | `Cursor ->
@@ -915,7 +915,7 @@ object (self)
         let forward_until_cursor () = (* go forward until locked > cursor *)
           let rec aux () =
             self#_advance ();
-            if cmp () < 0 && (getoldpos ())#compare (getpos ()) < 0 
+            if cmp () < 0 && (getoldpos ())#compare (getpos ()) < 0
             then
              begin
               buffer#move_mark old_locked_mark (getpos ());
@@ -945,26 +945,26 @@ object (self)
           end ;
           dispose_remember ();
           dispose_old_locked_mark ();
-        with 
+        with
         | Margin -> dispose_remember (); dispose_old_locked_mark (); self#notify
         | exc -> dispose_remember (); dispose_old_locked_mark ();
                  self#notify; raise exc)
-  with Invalid_argument "Array.make" ->
+  with Invalid_argument _ ->
      HLog.error "The script is too big!\n"
-  
-  method bos = 
+
+  method bos =
     match history with
     | _::[] -> true
     | _ -> false
 
-  method eos = 
-    let rec is_there_only_comments status s = 
+  method eos =
+    let rec is_there_only_comments status s =
       if Pcre.pmatch ~rex:only_dust_RE s then raise Margin;
       let strm =
        GrafiteParser.parsable_statement status
         (Ulexing.from_utf8_string s)in
       match GrafiteParser.parse_statement status strm with
-      | GrafiteAst.Comment (loc,_) -> 
+      | GrafiteAst.Comment (loc,_) ->
           let _,parsed_text_length = MatitaGtkMisc.utf8_parsed_text s loc in
           (* CSC: why +1 in the following lines ???? *)
           let parsed_text_length = parsed_text_length + 1 in
@@ -974,12 +974,12 @@ object (self)
       | GrafiteAst.Executable _ -> false
     in
     try is_there_only_comments self#status self#getFuture
-    with 
+    with
     | NCicLibrary.IncludedFileNotCompiled _
     | HExtlib.Localized _
     | CicNotationParser.Parse_error _ -> false
     | Margin | End_of_file -> true
-    | Invalid_argument "Array.make" -> false
+    | Invalid_argument _ -> false
 
   (* debug *)
   method dump () =

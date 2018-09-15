@@ -14,18 +14,18 @@ MODULES =			\
 	thread			\
 	logger			\
 	ng_kernel		\
-        ng_extraction           \
 	getter			\
 	library			\
 	content		        \
 	grafite			\
 	ng_refiner              \
-	ng_library 		\
-	ng_cic_content		\
 	disambiguation	        \
-	ng_disambiguation	\
 	ng_paramodulation	\
 	content_pres		\
+        ng_extraction           \
+	ng_library 		\
+	ng_cic_content		\
+	ng_disambiguation	\
 	grafite_parser          \
 	ng_tactics		\
 	grafite_engine          \
@@ -37,7 +37,7 @@ ifeq ($(DISTRIBUTED),no)
 	MODULES+=binaries
 endif
 
-all: metas $(MODULES:%=rec@all@%) 
+all: metas $(MODULES:%=rec@all@%)
 opt: metas syntax-extensions ulex $(MODULES:%=rec@opt@%)
 
 ifeq ($(HAVE_OCAMLOPT),yes)

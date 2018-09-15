@@ -14,13 +14,12 @@
 exception LibraryOutOfSync of string Lazy.t
 exception IncludedFileNotCompiled of string * string
 
-let magic = 2;;
+let magic = 2
 
 let refresh_uri uri = NUri.uri_of_string (NUri.string_of_uri uri);;
 
 let refresh_uri_in_universe =
  List.map (fun (x,u) -> x, refresh_uri u)
-;;
 
 let refresh_uri_in_reference (NReference.Ref (uri,spec)) =
  NReference.reference_of_spec (refresh_uri uri) spec
@@ -42,14 +41,13 @@ let refresh_uri_in_term status =
   | t -> NCicUtils.map status (fun _ _ -> ()) () (fun _ -> aux) t
 in
  aux
-;;
+
 
 let refresh_uri_in_obj status (uri,height,metasenv,subst,obj_kind) =
  assert (metasenv = []);
  assert (subst = []);
  refresh_uri uri,height,metasenv,subst,
   NCicUntrusted.map_obj_kind (refresh_uri_in_term status) obj_kind
-;;
 
 let ng_path_of_baseuri ?(no_suffix=false) baseuri =
  let uri = NUri.string_of_uri baseuri in
@@ -87,7 +85,7 @@ let time0 = [],[];;
 let storage = ref [];;
 let local_aliases = ref [];;
 
-let load_db,set_global_aliases,get_global_aliases,add_deps,get_deps,remove_deps=
+let load_db,set_global_aliases,get_global_aliases,add_deps, _ , _ =
  let global_aliases = ref [] in
  let rev_includes_map = ref NUri.UriMap.empty in
  let store_db () =
@@ -194,7 +192,7 @@ let get_transitively_included status =
 let dump_obj status obj =
  status#set_dump {status#dump with objs = obj::status#dump.objs }
 ;;
-
+(*
 let remove_objects ~baseuri =
    let uri = NUri.string_of_uri baseuri in
    let path = String.sub uri 4 (String.length uri - 4) in
@@ -204,7 +202,7 @@ let remove_objects ~baseuri =
       HLog.warn ("removing contents of baseuri: " ^ uri);
       Array.iter map (Sys.readdir path)
    end
-
+ *)
 module type SerializerType =
  sig
   type dumpable_status
