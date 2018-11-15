@@ -196,15 +196,17 @@ let rule_sort s1 s2 = theory_const "rule" [s1; s2]
 
 let max_sort s1 s2 = theory_const "max" [s1; s2]
  *)
+let witness = theory_const "I" []
+
 let univ_type s = theory_const "Univ" [s]
 
 let term_type s a = theory_const "Term" [s; a]
 
-let univ_term s = theory_const "univ" [s]
+let univ_term s s' = theory_const "univ" [s; s'; witness]
 
-let lift_term s1 s2 a = theory_const "lift" [s1; s2; a]
+let lift_term s1 s2 a = theory_const "lift" [s1; s2; witness; a]
 
-let prod_term s1 s2 a b = theory_const "prod" [s1; s2; a; b]
+let prod_term s1 s2 s3 a b = theory_const "prod" [s1; s2; s3; witness; a; b]
 
 type univ = Prop | Type of int
 
@@ -281,6 +283,11 @@ let max_sort s s' =
   | Prop, Prop -> Prop
   | Type i, Prop | Prop, Type i -> Type i
   | Type i, Type j -> Type (max i j)
+
+let rule s s' =
+  match s' with
+  | Prop -> Prop
+  | _ -> max_sort s s'
 
 let back_to_univ t =
   let rec to_nat t =
@@ -418,8 +425,10 @@ let of_term t =
   match t with
   | D.App (D.App (D.Const (_, t), s), a) when t = "Term" -> (back_to_univ s, a)
   | D.App (D.Const (_, t), a) when t = "Univ" ->
-      let s = back_to_univ a in
-      (succ s, univ_term a)
+     let s = back_to_univ a in
+     let s' = (succ s) in
+     let a' = term_of_univ s' in
+     (succ s, univ_term a a')
   | _ ->
       Format.printf "debug term:%a@." DeduktiPrint.print_term t ;
       assert false
@@ -433,10 +442,11 @@ let rec to_cic_prods l a =
       let s, t' = of_term t in
       let ss = term_of_univ s in
       let ss' = term_of_univ s' in
+      let ss'' = term_of_univ (rule s s') in
       to_cic_prods l
         (term_type
            (term_of_univ (rule_sort s s'))
-           (prod_term ss ss' t' (D.Lam (x, t, a))))
+           (prod_term ss ss' ss'' t' (D.Lam (x, t, a))))
 
 
 (** The translation of terms and types is parameterized by:
@@ -556,8 +566,9 @@ module Translation (I : INFO) = struct
         in
         let s2 = sort_of context_x b in
         let s2' = translate_sort s2 in
+        let s3' = term_of_univ (rule (back_to_univ s1') (back_to_univ s2')) in
         let b' = translate_term context_x b in
-        prod_term s1' s2' a' (D.Lam (x', a'', b'))
+        prod_term s1' s2' s3' a' (D.Lam (x', a'', b'))
     | C.Lambda (x, a, m) ->
         let a'' = translate_type context a in
         let x' = fresh_var context.dk x in
@@ -589,8 +600,9 @@ module Translation (I : INFO) = struct
         let const' = translate_reference reference in
         D.Const const'
     | C.Sort s ->
-        let s' = translate_sort s in
-        univ_term s'
+       let s' = translate_sort s in
+       let s'' = term_of_univ (succ (back_to_univ s')) in
+       univ_term s' s''
     | C.Implicit _ ->
         (* There should be no implicits at this point. *)
         assert false
@@ -672,11 +684,11 @@ module Translation (I : INFO) = struct
 
   (** Add a coercion to life a term to the given type. **)
   and translate_cast context term ty =
-    let apply m n =
+(*    let apply m n =
       match m with
       | C.Appl ms -> C.Appl (ms @ [n])
       | _ -> C.Appl [m; n]
-    in
+    in *)
     match whd context ty with
     | C.Prod (x, a, b) ->
        begin
@@ -1048,15 +1060,14 @@ module Translation (I : INFO) = struct
         let right_term' = D.app_bindings case' right_cons_params' in
         add_entry (fst match_const') (D.RewriteRule (context.dk, left_pattern', right_term'))
       in
-      let mk_rule univ' =
+(*      let mk_rule univ' =
         let univ = back_to_sort univ' in
         let puniv = pattern_of_univ univ' in
         let left_pattern' = D.papps match_ind' [puniv]  in
         let right_term' = translate_match_const (I.baseuri, ind_name) univ in
         add_entry (fst match_const') (D.RewriteRule
                                         ([], left_pattern', D.Const right_term'))
-      in
-      List.iter mk_rule all_univs;
+      in *)
       List.iteri translate_rule cons_infos
 
   (** A filter is similar to a match in that it blocks the application of
@@ -1315,25 +1326,24 @@ module Translation (I : INFO) = struct
           D.App (return_term', D.app_bindings (D.Const cons_const') cons_params') in
         add_entry (fst filter_const') (D.RewriteRule (context.dk, left_pattern', right_term'))
       in
-      let mk_rule univ' =
+(*      let mk_rule univ' =
         let univ = back_to_sort univ' in
         let puniv = pattern_of_univ univ' in
         let left_pattern' = D.papps filter_ind' [puniv]  in
         let right_term' = translate_filter_const (I.baseuri, ind_name) univ in
         add_entry (fst filter_const') (D.RewriteRule
                                          ([], left_pattern', D.Const right_term'))
-      in
-      List.iter mk_rule all_univs;
+      in *)
       List.iteri translate_rule cons_infos
 
   let translate_inductive leftno ((_, name, ty, constructors) as ind) =
     (*      Format.printf "translate inductive: %s@." name; *)
     Hashtbl.add inductive_registry name (leftno, ind) ;
     translate_declaration name ty ;
-    List.iter (translate_constructor leftno) constructors ;
+    List.iter (translate_constructor leftno) constructors ; (*
     let univs = List.map back_to_sort all_univs in
     List.iter (translate_match leftno name ty constructors) univs ;
-    List.iter (translate_filter leftno name ty constructors) univs;
+    List.iter (translate_filter leftno name ty constructors) univs; *)
     translate_match_scheme leftno name ty constructors;
     translate_filter_scheme leftno name ty constructors
 

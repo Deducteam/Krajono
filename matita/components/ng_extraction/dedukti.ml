@@ -27,12 +27,14 @@ let apps m ns = List.fold_left (fun m n -> App (m, n)) m ns
 let theory_modname = "cic"
 
 let theory_const c args = apps (Const (theory_modname, c)) args
+
+let witness = theory_const "I" []
 (*
 let univ_term s = theory_const "univ" [s]
 
 let succ_sort s = theory_const "succ" [s]
  *)
-let lift_term s1 s2 a = theory_const "lift" [s1; s2; a]
+let lift_term s1 s2 a = theory_const "lift" [s1; s2; witness; a]
 
 let is_sort ty =
   match ty with App (Const (_, s), _) when s = "Univ" -> true | _ -> false

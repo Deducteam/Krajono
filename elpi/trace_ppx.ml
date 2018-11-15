@@ -1,5 +1,5 @@
 (* provides:
-        
+
     let rec f x =
      [%trace "f" (fun fmt -> .. x ..) begin
          match x with
@@ -15,7 +15,7 @@
 
   requires:
 *)
-open Ppx_tools_402
+
 
 open Ast_mapper
 open Ast_helper
@@ -123,4 +123,3 @@ let () =
   Driver.register ~name:"trace" ~args ~reset_args
     Versions.ocaml_402 trace_mapper
 ;;
-

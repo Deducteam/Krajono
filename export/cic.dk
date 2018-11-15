@@ -1,14 +1,7 @@
-#NAME cic.
-
 Nat : Type.
 
 z : Nat.
 s : Nat -> Nat.
-
-def m : Nat -> Nat -> Nat.
-[i] m i z --> i.
-[j] m z j --> j.
-[i, j] m (s i) (s j) --> s (m i j).
 
 (; Sorts ;)
 
@@ -17,63 +10,59 @@ Sort : Type.
 prop : Sort.
 type : Nat -> Sort.
 
-(; Universe successors ;)
-def succ : Sort -> Sort.
-[] succ prop --> type z.
-[i] succ (type i) --> type (s i).
+True : Type.
+I : True.
 
-(; Universe product rules ;)
-def rule : Sort -> Sort -> Sort.
-[s1] rule s1 prop --> prop.
-[s2] rule prop s2 --> s2.
-[i, j] rule (type i) (type j) --> type (m i j).
+def Cumul : Sort -> Sort -> Type.
+[s] Cumul prop s --> True.
+[i] Cumul (type z) (type i) --> True.
+[i,j] Cumul (type (s i)) (type (s j)) --> Cumul (type i) (type j).
 
-def max : Sort -> Sort -> Sort.
-[s1] max s1 prop --> s1.
-[s2] max prop s2 --> s2.
-[i, j] max (type i) (type j) --> type (m i j).
+def Rule : Sort -> Sort -> Sort -> Type.
+[]  Rule _ prop prop --> True.
+[i] Rule prop i i --> True.
+[i] Rule (type i) (type z) (type i) --> True.
+[j] Rule (type z) (type j) (type j) --> True.
+[i,j,k] Rule (type (s i)) (type (s j)) (type (s k)) --> Rule (type i) (type j) (type k).
+
+def Axiom : Sort -> Sort -> Type.
+[] Axiom prop (type z) --> True.
+[] Axiom (type z) (type (s z)) --> True.
+[i,j] Axiom (type (s i)) (type (s j)) --> Axiom (type i) (type j).
 
 (; Types and terms ;)
 
-Univ : Sort -> Type.
+Univ : s : Sort -> Type.
 def Term : s : Sort -> a : Univ s -> Type.
 
-univ : s : Sort -> Univ (succ s).
-def prod : s1 : Sort -> s2 : Sort -> a : Univ s1 -> b : (Term s1 a -> Univ s2) -> Univ (rule s1 s2).
-def lift : s1 : Sort -> s2 : Sort -> a : Univ s1 -> Univ (max s1 s2).
 
-[s] Term _ (univ s) --> Univ s.
+(; should be private ;)
+univ' : s : Sort -> s' : Sort -> Univ s'.
 
-[s1,s2,a] Term _ (lift s1 s2 a) --> Term s1 a.
+def univ : s : Sort -> s' : Sort -> Axiom s s' -> Univ s'.
+[s,s'] univ s s' _ --> univ' s s'.
 
-[s1, s2, a , b]
-  Term _ (prod s1 s2 a b) --> x : Term s1 a -> Term s2 (b x).
+(; should be private ;)
+def lift' : s1 : Sort -> s2 : Sort -> Univ s1 -> Univ s2.
+
+def lift : s1 : Sort -> s2 : Sort -> Cumul s1 s2 -> Univ s1 -> Univ s2.
+[s1,s2,a] lift s1 s2 _ a --> lift' s1 s2 a.
+
+(; should be private ;)
+def prod' : s1 : Sort -> s2 : Sort -> s3 : Sort -> a : Univ s1 -> b : (Term s1 a -> Univ s2) -> Univ s3.
+
+def prod : s1 : Sort -> s2 : Sort -> s3 : Sort -> Rule s1 s2 s3 -> a : Univ s1 -> b : (Term s1 a -> Univ s2) -> Univ s3.
+[s1,s2,s3,a,b] prod s1 s2 s3 _ a b --> prod' s1 s2 s3 a b.
+
+[s] Term _ (univ' s _) --> Univ s.
+[s1, a] Term _ (lift' s1 _ a) --> Term s1 a.
+[s1, s2, a, b] Term _ (prod' s1 s2 _ a b) --> x : Term s1 a -> Term s2 (b x).
 
 (; Canonicity rules ;)
 
-[s ] max s s --> s.
-[s1 , s2 , s3 ] max (max s1 s2) s3 --> max s1 (max s2 s3).
-[s1 , s2 , s3 ] rule (max s1 s3) s2 --> max (rule s1 s2) (rule s3 s2).
-[s1 , s2 , s3 ] rule s1 (max s2 s3) --> max (rule s1 s2) (rule s1 s3).
-
-(; canonicity rules ;)
-
-[s , a] lift s s a --> a.
-[s1 , s2 , s3 , a]
-  lift _ s3 (lift s1 s2 a) -->
-  lift s1 (max s2 s3) a.
-[s1 , s2 , s3 , a , b]
-  prod _ s2 (lift s1 s3 a) b -->
-  lift (rule s1 s2) (rule s3 s2) (prod s1 s2 a b).
-[s1 , s2 , s3 , a , b]
-  prod s1 _ a (x => lift s2 s3 (b x)) -->
-  lift (rule s1 s2) (rule s1 s3) (prod s1 s2 a (x => b x)).
-
-(;
-[s1 , s2 , s3 , a]
-  lift _ s3 (lift s1 s2 a) -->
-  lift s1 (max s2 s3) a.
-[s1, s2, s3, a, b]
-  lift _ s3 (prod s1 s2 a b) -->
-  prod (max s1 s3) (max s2 s3) (lift s1 s3 a) (x => lift s2 s3 (b x)).
-;)
+[s, a] lift' s s a --> a.
+[s1, s2, s3, a] lift' _ s3 (lift' s1 s2 a) --> lift' s1 s3 a.
+[s1, s2, s3, s4, a, b]
+  prod' _ s2 s4 (lift' s1 s3 a) b --> lift' s3 s4 (prod' s1 s2 s3 a b).
+[s1, s2, s3, s4, a, b]
+  prod' s1 _ s4 a (x => lift' s2 s3 (b x)) --> lift' s3 s4 (prod' s1 s2 s3 a (x => b x)).
