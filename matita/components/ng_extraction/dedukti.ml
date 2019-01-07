@@ -29,11 +29,13 @@ let theory_modname = "cic"
 let theory_const c args = apps (Const (theory_modname, c)) args
 
 let witness = theory_const "I" []
-(*
-let univ_term s = theory_const "univ" [s]
+
+let univ_term s s' = theory_const "univ" [s; s'; witness]
 
 let succ_sort s = theory_const "succ" [s]
- *)
+
+let cast_term s1 s2 a b t = theory_const "cast" [s1 ; s2; a; b; witness; t]
+
 let lift_term s1 s2 a = theory_const "lift" [s1; s2; witness; a]
 
 let is_sort ty =
@@ -54,17 +56,12 @@ and is_prod_product ty =
   match ty with
   | App(App(App(App(Const(_,s),_),_),_),Lam(_,_,ty)) when s = "prod" -> is_sort_product ty
   | _ -> false
-(*
-let get_sort_product ty =
-  match ty with
-  | App(App(Const (_,_), s), _) -> s
-  | _ -> assert false
 
 let extract_type ty =
   match ty with
-  | App(App(Const (_,_), _), ty) -> ty
+  | App(App(Const (_,_), s), ty) -> (s,ty)
   | _ -> assert false
- *)
+
 
 let prods bs a = List.fold_right (fun (x, b) a -> Prod(x, b, a)) bs a
 let lams bs m = List.fold_right (fun (x, b) m -> Lam(x, b, m)) bs m
@@ -75,10 +72,14 @@ let app_bindings m bs =
     let ty = List.assoc x bs in
     if is_sort ty then
       let ty' = extract_sort ty in
-      lift_term ty' ty' (Var x)
-    else if is_sort_product ty then
-      Var x
-    else  Var x
+      let s = succ_sort ty' in
+      cast_term s s (univ_term ty' s) (univ_term ty' s) (Var x)
+    else
+      let (s,ty') =  extract_type ty in
+      if is_sort_product ty' then
+        cast_term s s ty' ty' (Var x)
+      else
+        Var x
   in
   let xs = fst (List.split bs) in
   apps m (List.map translate_var xs)

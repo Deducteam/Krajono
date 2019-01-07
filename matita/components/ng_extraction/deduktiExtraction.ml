@@ -206,6 +206,8 @@ let univ_term s s' = theory_const "univ" [s; s'; witness]
 
 let lift_term s1 s2 a = theory_const "lift" [s1; s2; witness; a]
 
+let cast_term s1 s2 a b t = theory_const "cast" [s1 ; s2; a; b; witness; t]
+
 let prod_term s1 s2 s3 a b = theory_const "prod" [s1; s2; s3; witness; a; b]
 
 type univ = Prop | Type of int
@@ -667,56 +669,30 @@ module Translation (I : INFO) = struct
 
   (** Translate a term according to the given type. If the type does not
           correspond to the minimal type of the term, a coercion is added. **)
-  and translate_term_as context term ty =
-    let minimal_ty = type_of context term in
-    if are_convertible context minimal_ty ty then
-      match whd context ty with
-      | C.Sort C.Prop -> translate_term context term
-      | C.Sort s ->
-        let s' = translate_sort s in
-        let term' = translate_term context term in lift_term s' s' term'
-      | C.Prod _ when is_sort ty ->
-         translate_cast context term ty
-      | _ ->
-         translate_term context term
-    else
-      translate_cast context term ty
+  and translate_term_as context term ty = translate_cast context term ty
 
   (** Add a coercion to life a term to the given type. **)
   and translate_cast context term ty =
-(*    let apply m n =
-      match m with
-      | C.Appl ms -> C.Appl (ms @ [n])
-      | _ -> C.Appl [m; n]
-    in *)
-    match whd context ty with
-    | C.Prod (x, a, b) ->
-       begin
-         match term with
-         | C.Lambda (x,a,t) ->
-            let a'' = translate_type context a in
-            let x'  = fresh_var context.dk x in
-            let context_x = {
-                cic = (x, C.Decl a) :: context.cic;
-                dk  = (x', a'') :: context.dk;
-                map = (D.Var x') :: context.map;
-              } in
-            (*
-            let mx  = (apply (lift 1 term) (C.Rel 1)) in *)
-            let t' = translate_cast context_x t b in
-            D.Lam (x', a'', t')
-         | _ ->
-            (* Actually, some terms are not eta expanded. This is due to left parameters of inductive types. For example "p : ex A P". The only time we need to add a cast, is in the identity case, so it is not *necessary* for type-checking. *CONJECTURE*: it is not necessary for universes minimization too. *)
-            let term' = translate_term context term in
-            term'
-       end
-    | C.Sort s2 ->
-      let s1 = sort_of context term in
+    let rec sort_product minimal_ty =
+      (* Assume it is beta normal *)
+      match minimal_ty with
+      | C.Sort _ -> true
+      | C.Prod(s,_,b) -> sort_product b
+      | _ -> false
+    in
+    let minimal_ty = type_of context term in
+    let term' = translate_term context term in
+    if are_convertible context minimal_ty ty && not (sort_product minimal_ty) then
+      term'
+    else
+
+      let minimal_ty' = translate_term context minimal_ty in
+      let s1 = sort_of context minimal_ty in
       let s1' = translate_sort s1 in
+      let ty' = translate_term context ty in
+      let s2 = sort_of context ty in
       let s2' = translate_sort s2 in
-      let term' = translate_term context term in
-      lift_term s1' s2' term'
-    | _ -> assert false
+      cast_term s1' s2' minimal_ty' ty' term'
 
   (** Translate the arguments of an application according to the type
         of the applied function. **)
@@ -1498,150 +1474,6 @@ module Translation (I : INFO) = struct
            The [i_attr] argument is not needed by the kernel. *)
         if not is_inductive then not_implemented "co-inductive type" ;
         translate_inductives leftno types
-
-  let rec is_sort b =
-    match b with
-    | C.Sort _ -> true
-    | C.Prod (_, _, b) -> false
-    | _ -> false
-
-  and is_prod_sort b =
-    is_sort b ||
-    match b with
-    | C.Prod (_,_,b) -> is_prod_sort b
-    | _ -> false
-
-  let rec eta context t =
-    let apply m n =
-      match m with
-      | C.Appl ms -> C.Appl (ms @ [n])
-      | _ -> C.Appl [m; n]
-    in (*
-    Format.eprintf "ctx(%d):@." (List.length context.cic);
-    List.iter (fun (id,_) -> Format.eprintf "(%s,_)" id) context.cic;
-    Format.eprintf "@.";
-    Format.eprintf "term: %a@." (pp ~ctx:context.cic) t; *)
-    let ty =
-    try
-      whd context (type_of context t)
-    with NCicTypeChecker.TypeCheckerFailure(s) ->
-      Format.eprintf "Eta: %a@." (pp ~ctx:context.cic) t;
-      Format.eprintf "[ERROR]@.";
-      Format.eprintf "%s@." (Lazy.force s);
-      assert false
-    in
-    (*        Format.eprintf "eta %s:%a@." x' DeduktiPrint.print_term a''; *)
-    match ty with
-    | C.Prod (x, a, b) when is_prod_sort ty ->
-       let a' = eta context a in
-       begin
-         match t with
-         | C.Lambda(x,a,t) ->
-            let context_x = {
-                cic = (x, C.Decl a') :: context.cic;
-                dk  =  context.dk;
-                map = context.map;
-              } in
-            if is_sort b then
-              C.Lambda(x,a',t)
-            else
-              C.Lambda(x,a',eta context_x t)
-         | _ ->
-            let mx  = (apply (lift 1 t) (C.Rel 1)) in
-            let context_x = {
-                cic = (x, C.Decl a') :: context.cic;
-                dk  =  context.dk;
-                map = context.map;
-              }
-            in
-            let mx' = eta context_x mx in
-            C.Lambda(x,a',mx')
-       end
-    | _ -> t
-
-  let rec eta_expand_term context = function
-    | C.Rel i as t -> eta context t
-    | C.Meta _
-      | C.Appl []
-      | C.Implicit _ -> assert false
-    | C.Appl (m::ns) ->
-       let l = List.map (eta_expand_term context) (m::ns) in
-       eta context (C.Appl l)
-    | C.Prod (x, a, b) ->
-       let a' = eta_expand_term context a in
-       let context_x = {context with cic = (x, C.Decl a'):: context.cic} in
-       let b' = eta_expand_term context_x b in
-       C.Prod (x,a',b')
-    | C.Lambda(x,a,m) ->
-       let a' = eta_expand_term context a in
-       let context_x = {context with cic = (x, C.Decl a'):: context.cic} in
-       let m' = eta_expand_term context_x m in
-       eta context (C.Lambda(x,a',m'))
-    | C.LetIn(x,a,n,m) ->
-       let a' = eta_expand_term context a in
-       let n' = eta_expand_term context n in
-       let context_x = {context with cic = (x, C.Decl a'):: context.cic} in
-       let m' = eta_expand_term context_x m in
-       C.LetIn(x,a',n',m')
-    | C.Const _ as t -> eta context t
-    | C.Sort s -> C.Sort s
-    | C.Match (reference, return_type, matched, cases)  ->
-(*       Format.eprintf "before@.";
-       Format.eprintf "debug: %a@." (pp ~ctx:context.cic) t; *)
-       let return_type' = eta_expand_term context return_type in
-(*       Format.eprintf "return_type OK@."; *)
-       let matched' = eta_expand_term context matched in
-       (*       Format.eprintf "matched OK@."; *)
-       let cases' = List.map (eta_expand_term context) cases in
-(*       Format.eprintf "after@."; *)
-       C.Match(reference, return_type', matched', cases')
-
-  let eta_expand_declaration ty =
-    eta_expand_term empty_context ty
-
-  let eta_expand_definition te ty =
-    let ty' = eta_expand_term empty_context ty in
-    let te' = eta_expand_term empty_context te in
-    (te',ty')
-
-  let eta_expand_fixpoints funs =
-    let eta_expand_fixpoint (rel,name,recno, ty, body) =
-      let ty' = eta_expand_term empty_context ty in
-      let body' = eta_expand_term empty_context body in
-      (rel,name,recno,ty', body')
-    in
-    List.map (eta_expand_fixpoint) funs
-
-  let eta_expand_inductives inds =
-    let eta_expand_inductive (rel,name,ty,constructors) =
-      let ty' = eta_expand_term empty_context ty in
-      let eta_expand_constructor (rel,name,ty) =
-        let ty' =
-          match ty with
-          | C.Prod(x,tya,tyb) ->
-             let tya' = eta_expand_term empty_context tya in
-             C.Prod(x,tya',tyb)
-          | _ -> ty
-        in
-        (rel,name,ty')
-      in
-      (rel,name,ty',List.map eta_expand_constructor constructors)
-    in
-    List.map (eta_expand_inductive) inds
-
-  let eta_expand = function
-    | C.Constant(rel, name, None, ty, attr) ->
-       C.Constant(rel,name, None, eta_expand_declaration ty, attr)
-    | C.Constant(rel, name, Some body, ty, attr) ->
-       let body', ty' = eta_expand_definition body ty in
-       C.Constant(rel, name, Some body', ty', attr)
-    | C.Fixpoint(is_recursive, funs, attr) ->
-       C.Fixpoint(is_recursive, eta_expand_fixpoints funs, attr)
-    (* Cannot be eta-expanded! Conjecture: it is not necessary for minimization *)
-    | C.Inductive(is_inductive, leftno, types, attr) (* as t *) ->
-       assert (List.length types = 1);
-       C.Inductive(is_inductive, leftno, eta_expand_inductives types, attr)
-
 end
 
 (** Extraction entry-points **)
@@ -1651,6 +1483,7 @@ let extraction_enabled () =
       default
   in
   safe_get_bool "extract_dedukti" false
+
 
 
 
@@ -1672,11 +1505,10 @@ let extract_obj status obj =
       let baseuri = U.baseuri_of_uri uri
     end in
     let module T = Translation (I) in
-    let obj_kind' = T.eta_expand obj_kind in
-    T.translate_obj_kind obj_kind' ;
+    T.translate_obj_kind obj_kind;
     HLog.message
       (Format.sprintf "Dedukti: Done extracting object %s"
-         (U.string_of_uri uri)) )
+         (U.string_of_uri uri)))
 
 
 (** This function is called every time a constraint is added to the library. **)

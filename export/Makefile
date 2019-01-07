@@ -6,7 +6,8 @@ DKOPTIONS = $(DKFLAGS) -nl -errors-in-snf -e
 
 DKS = $(wildcard *.dk)
 DKOS = $(DKS:.dk=.dko)
-
+DKTIMEE=
+DKTIME=$(DKTIMEE)
 
 ifdef DKTIME
 DKCHECK_=time --format "TIME: %U" --output /dev/stdout $(DKCHECK) $(DKOPTIONS)
