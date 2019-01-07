@@ -104,13 +104,15 @@ theorem exp_to_fact2: ∀n.O < n →
   ]
 qed.
 
-theorem le_fact_10: fact (2*5) ≤ (exp 2 ((2*5)-2))*(fact 5)*(fact 5).
+axiom le_fact_10: fact (2*5) ≤ (exp 2 ((2*5)-2))*(fact 5)*(fact 5).
+(*
 >factS in ⊢ (?%?); >factS in ⊢ (?%?); <associative_times in ⊢ (?%?);
 >factS in ⊢ (?%?); <associative_times in ⊢ (?%?);
 >factS in ⊢ (?%?); <associative_times in ⊢ (?%?);
 >factS in ⊢ (?%?); <associative_times in ⊢ (?%?);
-@le_times [2:%] @leb_true_to_le % 
-qed-.
+@le_times [2:%] ;  @leb_true_to_le % 
+qed.
+*)
 
 theorem ab_times_cd: ∀a,b,c,d.(a*b)*(c*d)=(a*c)*(b*d). 
 //

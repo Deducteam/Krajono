@@ -80,6 +80,7 @@ cleandk :
 	make -C export clean
 	ls export/*.dk | grep -v cic.dk | xargs rm -f
 
-alldks: cleandk $(TARGETS)  dkcheck
-test  : cleandk basics/bool dkcheck
-wrap  : cleandk wrapper     dkcheck
+alldks     : cleandk $(TARGETS)  dkcheck
+test       : cleandk basics/bool dkcheck
+factorial  : cleandk arithmetics/factorial dkcheck
+wrap       : cleandk wrapper     dkcheck
